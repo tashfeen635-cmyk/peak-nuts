@@ -488,6 +488,316 @@ button {
   margin: 0 auto;
 }
 
+/* ========== SPECIAL PRODUCT - SHILAJIT ========== */
+.special-product {
+  padding: 100px 0;
+  background: var(--dark);
+  overflow: hidden;
+}
+
+.special-product-inner {
+  display: flex;
+  align-items: center;
+  gap: 80px;
+}
+
+.special-product-image {
+  flex: 0 0 45%;
+  position: relative;
+}
+
+.special-img-wrapper {
+  position: relative;
+  z-index: 2;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.special-img-wrapper img {
+  width: 100%;
+  height: 550px;
+  object-fit: cover;
+  display: block;
+}
+
+.special-badge {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 8px 18px;
+  border-radius: 4px;
+}
+
+.special-img-bg {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  right: -30px;
+  bottom: -30px;
+  border: 2px solid var(--primary);
+  border-radius: 16px;
+  z-index: 1;
+}
+
+.special-product-content {
+  flex: 1;
+}
+
+.special-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 6px 16px;
+  border-radius: 30px;
+  margin-bottom: 25px;
+}
+
+.special-title {
+  font-family: var(--font-heading);
+  font-size: 46px;
+  font-weight: 400;
+  color: var(--white);
+  line-height: 1.15;
+  margin-bottom: 20px;
+}
+
+.special-description {
+  font-size: 16px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 35px;
+  max-width: 480px;
+}
+
+.special-benefits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 35px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.benefit-icon {
+  flex-shrink: 0;
+  color: var(--primary);
+  margin-top: 2px;
+}
+
+.benefit-text strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--white);
+  margin-bottom: 3px;
+}
+
+.benefit-text span {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.special-pricing {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin-bottom: 35px;
+  padding-bottom: 35px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.special-price-old {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.35);
+  text-decoration: line-through;
+  margin-right: 10px;
+}
+
+.special-price-current {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.special-rating .stars {
+  font-size: 16px;
+}
+
+.rating-count {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: 6px;
+}
+
+.special-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.special-actions .btn-primary {
+  padding: 16px 40px;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--white);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 16px 40px;
+}
+
+.btn-outline:hover {
+  border-color: var(--white);
+  background: var(--white);
+  color: var(--black);
+}
+
+/* Special Product - Alternate (Tumoro Tea) */
+.special-product-alt {
+  background: var(--white);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.special-product-alt .special-tag {
+  color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.special-product-alt .special-title {
+  color: var(--black);
+}
+
+.special-product-alt .special-description {
+  color: var(--gray);
+}
+
+.special-product-alt .benefit-text strong {
+  color: var(--black);
+}
+
+.special-product-alt .benefit-text span {
+  color: var(--gray-light);
+}
+
+.special-product-alt .special-price-old {
+  color: var(--gray-light);
+}
+
+.special-product-alt .special-price-current {
+  color: var(--black);
+}
+
+.special-product-alt .rating-count {
+  color: var(--gray-light);
+}
+
+.special-product-alt .special-pricing {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.special-product-alt .btn-outline {
+  color: var(--black);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.special-product-alt .btn-outline:hover {
+  border-color: var(--black);
+  background: var(--black);
+  color: var(--white);
+}
+
+.special-product-alt .special-img-bg {
+  border-color: var(--primary-dark);
+}
+
+.special-reverse {
+  flex-direction: row-reverse;
+}
+
+/* Special Product Responsive */
+@media (max-width: 992px) {
+  .special-product-inner {
+    flex-direction: column;
+    gap: 50px;
+  }
+
+  .special-product-image {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .special-title {
+    font-size: 36px;
+  }
+
+  .special-benefits {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .special-product {
+    padding: 60px 0;
+  }
+
+  .special-img-wrapper img {
+    height: 400px;
+  }
+
+  .special-img-bg {
+    top: 20px;
+    left: 20px;
+    right: -20px;
+    bottom: -20px;
+  }
+
+  .special-title {
+    font-size: 30px;
+  }
+
+  .special-price-current {
+    font-size: 28px;
+  }
+
+  .special-pricing {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .special-actions {
+    flex-direction: column;
+  }
+
+  .special-actions .btn {
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .special-title {
+    font-size: 26px;
+  }
+
+  .special-img-wrapper img {
+    height: 320px;
+  }
+}
+
 /* ========== PRODUCTS ========== */
 .products-section {
   padding: 80px 0;
@@ -499,7 +809,7 @@ button {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 30px;
 }
 
@@ -581,6 +891,11 @@ button {
   color: var(--white);
 }
 
+.product-badge.hot {
+  background: #e04f3a;
+  color: var(--white);
+}
+
 .product-info {
   padding: 20px 5px;
   text-align: center;
@@ -592,6 +907,23 @@ button {
   font-weight: 400;
   color: var(--black);
   margin-bottom: 8px;
+}
+
+.product-name-urdu {
+  display: block;
+  font-size: 14px;
+  color: var(--primary-dark);
+  font-style: italic;
+  margin-bottom: 6px;
+  direction: rtl;
+}
+
+.product-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--gray-light);
+  margin-bottom: 8px;
+  padding: 0 5px;
 }
 
 .product-rating {
