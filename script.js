@@ -269,6 +269,14 @@
               priceCurrentEl.textContent = '$' + dbProduct.price.toFixed(2);
             }
 
+            // Update image from database
+            if (dbProduct.image) {
+              var imgEl = card.querySelector('.product-img img');
+              if (imgEl) {
+                imgEl.src = dbProduct.image;
+              }
+            }
+
             // Show out of stock state
             if (dbProduct.stock === 'Out of Stock') {
               btn.textContent = 'OUT OF STOCK';
@@ -294,6 +302,14 @@
             var priceCurrentEl = section.querySelector('.special-price-current');
             if (priceCurrentEl) {
               priceCurrentEl.textContent = '$' + dbProduct.price.toFixed(2);
+            }
+
+            // Update image from database
+            if (dbProduct.image) {
+              var imgEl = section.querySelector('.special-img-wrapper img');
+              if (imgEl) {
+                imgEl.src = dbProduct.image;
+              }
             }
           }
         });
