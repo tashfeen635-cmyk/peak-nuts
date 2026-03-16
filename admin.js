@@ -6,7 +6,9 @@
 (function () {
   'use strict';
 
-  var API_BASE = 'http://localhost:5000/api';
+  var API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : '/api';
 
   // ---- IN-MEMORY CACHE (loaded from API) ----
   var products = [];
@@ -56,6 +58,11 @@
 
   function loadRevenue() {
     return apiGet('/revenue').then(function (data) { revenueData = data; });
+  }
+
+  // ---- ID HELPER (works with both SQLite `id` and MongoDB `_id`) ----
+  function getId(obj) {
+    return obj._id || obj.id;
   }
 
   // ---- HELPERS ----
@@ -253,10 +260,10 @@
         '<td>' + formatCurrency(p.price) + '</td>' +
         '<td><span class="badge ' + stockBadgeClass(p.stock) + '">' + p.stock + '</span></td>' +
         '<td><div class="td-actions">' +
-        '<button class="btn-icon" data-edit-id="' + p.id + '" title="Edit">' +
+        '<button class="btn-icon" data-edit-id="' + getId(p) + '" title="Edit">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>' +
         '</button>' +
-        '<button class="btn-icon danger" data-delete-id="' + p.id + '" title="Delete">' +
+        '<button class="btn-icon danger" data-delete-id="' + getId(p) + '" title="Delete">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' +
         '</button>' +
         '</div></td>' +
@@ -317,7 +324,7 @@
   function openEditProduct(id) {
     var product = null;
     for (var i = 0; i < products.length; i++) {
-      if (String(products[i].id) === String(id)) { product = products[i]; break; }
+      if (String(getId(products[i])) === String(id)) { product = products[i]; break; }
     }
     if (!product) return;
 
@@ -376,7 +383,7 @@
     pendingDeleteId = id;
     var product = null;
     for (var i = 0; i < products.length; i++) {
-      if (String(products[i].id) === String(id)) { product = products[i]; break; }
+      if (String(getId(products[i])) === String(id)) { product = products[i]; break; }
     }
     if (!product) return;
     deleteProductName.textContent = product.name;
@@ -428,7 +435,7 @@
         '<td>' + itemCount + ' item' + (itemCount !== 1 ? 's' : '') + '</td>' +
         '<td>' + formatCurrency(calcOrderTotal(o)) + '</td>' +
         '<td>' +
-        '<select class="status-select" data-order-id="' + o.id + '">' +
+        '<select class="status-select" data-order-id="' + getId(o) + '">' +
         '<option value="Pending"' + (o.status === 'Pending' ? ' selected' : '') + '>Pending</option>' +
         '<option value="Shipped"' + (o.status === 'Shipped' ? ' selected' : '') + '>Shipped</option>' +
         '<option value="Delivered"' + (o.status === 'Delivered' ? ' selected' : '') + '>Delivered</option>' +
@@ -436,7 +443,7 @@
         '</td>' +
         '<td>' + formatDate(o.date) + '</td>' +
         '<td>' +
-        '<button class="btn-icon" data-view-order="' + o.id + '" title="View Details">' +
+        '<button class="btn-icon" data-view-order="' + getId(o) + '" title="View Details">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>' +
         '</button>' +
         '</td>' +
@@ -451,7 +458,7 @@
         var newStatus = this.value;
         var displayId = '';
         for (var i = 0; i < orders.length; i++) {
-          if (String(orders[i].id) === dbId) { displayId = orders[i].orderId; break; }
+          if (String(getId(orders[i])) === dbId) { displayId = orders[i].orderId; break; }
         }
         apiPut('/orders/' + dbId, { status: newStatus })
           .then(function () {
@@ -483,7 +490,7 @@
   function openOrderDetail(dbId) {
     var order = null;
     for (var i = 0; i < orders.length; i++) {
-      if (String(orders[i].id) === dbId) { order = orders[i]; break; }
+      if (String(getId(orders[i])) === dbId) { order = orders[i]; break; }
     }
     if (!order) return;
 
