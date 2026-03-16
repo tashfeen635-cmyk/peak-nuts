@@ -254,7 +254,11 @@
     var html = '';
     for (var i = 0; i < products.length; i++) {
       var p = products[i];
+      var imgCell = p.image
+        ? '<td><img class="product-thumb" src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name) + '"></td>'
+        : '<td><div class="product-thumb-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></div></td>';
       html += '<tr>' +
+        imgCell +
         '<td><strong>' + escapeHtml(p.name) + '</strong></td>' +
         '<td>' + escapeHtml(p.category) + '</td>' +
         '<td>' + formatCurrency(p.price) + '</td>' +
@@ -333,6 +337,7 @@
     document.getElementById('productCategory').value = product.category;
     document.getElementById('productPrice').value = product.price;
     document.getElementById('productStock').value = product.stock;
+    document.getElementById('productImage').value = product.image || '';
     openProductModal('Edit Product');
   }
 
@@ -342,11 +347,13 @@
     var category = document.getElementById('productCategory').value;
     var price = parseFloat(document.getElementById('productPrice').value);
     var stock = document.getElementById('productStock').value;
+    var image = document.getElementById('productImage').value.trim();
     var editId = productEditId.value;
+    var productData = { name: name, category: category, price: price, stock: stock, image: image };
 
     if (editId) {
       // Update via API
-      apiPut('/products/' + editId, { name: name, category: category, price: price, stock: stock })
+      apiPut('/products/' + editId, productData)
         .then(function () {
           return loadProducts();
         })
@@ -358,7 +365,7 @@
         });
     } else {
       // Create via API
-      apiPost('/products', { name: name, category: category, price: price, stock: stock })
+      apiPost('/products', productData)
         .then(function () {
           return loadProducts();
         })

@@ -19,7 +19,8 @@ db.exec(`
     name TEXT NOT NULL,
     category TEXT NOT NULL,
     price REAL NOT NULL,
-    stock TEXT NOT NULL
+    stock TEXT NOT NULL,
+    image TEXT DEFAULT ''
   );
 
   CREATE TABLE IF NOT EXISTS orders (
@@ -53,29 +54,29 @@ db.exec(`
 
 // ---- Seed Data ----
 const seedProducts = [
-  { name: 'Organic Almonds', category: 'Nuts', price: 14.00, stock: 'In Stock' },
-  { name: 'Raw Cashews', category: 'Nuts', price: 16.00, stock: 'In Stock' },
-  { name: 'Roasted Pistachios', category: 'Nuts', price: 19.00, stock: 'In Stock' },
-  { name: 'Brazil Nuts', category: 'Nuts', price: 22.00, stock: 'In Stock' },
-  { name: 'Walnut Halves', category: 'Nuts', price: 15.00, stock: 'In Stock' },
-  { name: 'Macadamia Nuts', category: 'Nuts', price: 28.00, stock: 'Low Stock' },
-  { name: 'Pecan Pieces', category: 'Nuts', price: 20.00, stock: 'In Stock' },
-  { name: 'Hazelnut Premium', category: 'Nuts', price: 24.00, stock: 'In Stock' },
-  { name: 'Shilajit Resin', category: 'Herbs & Supplements', price: 59.00, stock: 'In Stock' },
-  { name: 'Shilajit Capsules', category: 'Herbs & Supplements', price: 45.00, stock: 'In Stock' },
-  { name: 'Ashwagandha', category: 'Herbs & Supplements', price: 24.00, stock: 'In Stock' },
-  { name: 'Panax Ginseng', category: 'Herbs & Supplements', price: 32.00, stock: 'Low Stock' },
-  { name: 'Triphala', category: 'Herbs & Supplements', price: 20.00, stock: 'In Stock' },
-  { name: 'Boswellia', category: 'Herbs & Supplements', price: 26.00, stock: 'In Stock' },
-  { name: 'Maca Root', category: 'Herbs & Supplements', price: 28.00, stock: 'In Stock' },
-  { name: 'Gotu Kola', category: 'Herbs & Supplements', price: 22.00, stock: 'Out of Stock' },
-  { name: 'Tumoro Wild Thyme Tea', category: 'Teas', price: 25.00, stock: 'In Stock' },
-  { name: 'Tumoro Tea Loose Leaf', category: 'Teas', price: 22.00, stock: 'In Stock' },
-  { name: 'Honey Roast Mix', category: 'Mixes & Butters', price: 17.00, stock: 'In Stock' },
-  { name: 'Trail Mix Deluxe', category: 'Mixes & Butters', price: 16.00, stock: 'In Stock' },
-  { name: 'Mixed Nut Butter', category: 'Mixes & Butters', price: 12.00, stock: 'In Stock' },
-  { name: 'Turmeric Curcumin', category: 'Spices', price: 18.00, stock: 'In Stock' },
-  { name: 'Cinnamon (Dal Chini)', category: 'Spices', price: 12.00, stock: 'In Stock' }
+  { name: 'Organic Almonds', category: 'Nuts', price: 14.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?w=400&h=500&fit=crop&q=80' },
+  { name: 'Raw Cashews', category: 'Nuts', price: 16.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1599599810694-b5b37304c041?w=400&h=500&fit=crop&q=80' },
+  { name: 'Roasted Pistachios', category: 'Nuts', price: 19.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400&h=500&fit=crop&q=80' },
+  { name: 'Brazil Nuts', category: 'Nuts', price: 22.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=500&fit=crop&q=80' },
+  { name: 'Walnut Halves', category: 'Nuts', price: 15.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=400&h=500&fit=crop&q=80' },
+  { name: 'Macadamia Nuts', category: 'Nuts', price: 28.00, stock: 'Low Stock', image: 'https://images.unsplash.com/photo-1509721434272-b79147e0e708?w=400&h=500&fit=crop&q=80' },
+  { name: 'Pecan Pieces', category: 'Nuts', price: 20.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1564424224827-cd24b8915874?w=400&h=500&fit=crop&q=80' },
+  { name: 'Hazelnut Premium', category: 'Nuts', price: 24.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1526081715791-7c538f86060e?w=400&h=500&fit=crop&q=80' },
+  { name: 'Shilajit Resin', category: 'Herbs & Supplements', price: 59.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400&h=500&fit=crop&q=80' },
+  { name: 'Shilajit Capsules', category: 'Herbs & Supplements', price: 45.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=500&fit=crop&q=80' },
+  { name: 'Ashwagandha', category: 'Herbs & Supplements', price: 24.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400&h=500&fit=crop&q=80' },
+  { name: 'Panax Ginseng', category: 'Herbs & Supplements', price: 32.00, stock: 'Low Stock', image: 'https://images.unsplash.com/photo-1580541832626-2a7131ee809f?w=400&h=500&fit=crop&q=80' },
+  { name: 'Triphala', category: 'Herbs & Supplements', price: 20.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=500&fit=crop&q=80' },
+  { name: 'Boswellia', category: 'Herbs & Supplements', price: 26.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?w=400&h=500&fit=crop&q=80' },
+  { name: 'Maca Root', category: 'Herbs & Supplements', price: 28.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=500&fit=crop&q=80' },
+  { name: 'Gotu Kola', category: 'Herbs & Supplements', price: 22.00, stock: 'Out of Stock', image: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?w=400&h=500&fit=crop&q=80' },
+  { name: 'Tumoro Wild Thyme Tea', category: 'Teas', price: 25.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&h=500&fit=crop&q=80' },
+  { name: 'Tumoro Tea Loose Leaf', category: 'Teas', price: 22.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=500&fit=crop&q=80' },
+  { name: 'Honey Roast Mix', category: 'Mixes & Butters', price: 17.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=400&h=500&fit=crop&q=80' },
+  { name: 'Trail Mix Deluxe', category: 'Mixes & Butters', price: 16.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1606923829579-0cb981a83e2e?w=400&h=500&fit=crop&q=80' },
+  { name: 'Mixed Nut Butter', category: 'Mixes & Butters', price: 12.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=400&h=500&fit=crop&q=80' },
+  { name: 'Turmeric Curcumin', category: 'Spices', price: 18.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1455853828816-0c301a011711?w=400&h=500&fit=crop&q=80' },
+  { name: 'Cinnamon (Dal Chini)', category: 'Spices', price: 12.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1471943311424-646960669fbc?w=400&h=500&fit=crop&q=80' }
 ];
 
 const seedOrders = [
@@ -115,9 +116,9 @@ app.post('/api/seed', (req, res) => {
     const revCount = db.prepare('SELECT COUNT(*) AS cnt FROM revenue').get().cnt;
 
     if (productCount === 0) {
-      const insertProduct = db.prepare('INSERT INTO products (name, category, price, stock) VALUES (?, ?, ?, ?)');
+      const insertProduct = db.prepare('INSERT INTO products (name, category, price, stock, image) VALUES (?, ?, ?, ?, ?)');
       const insertMany = db.transaction((items) => {
-        for (const p of items) insertProduct.run(p.name, p.category, p.price, p.stock);
+        for (const p of items) insertProduct.run(p.name, p.category, p.price, p.stock, p.image || '');
       });
       insertMany(seedProducts);
     }
@@ -170,9 +171,9 @@ app.get('/api/products', (req, res) => {
 
 app.post('/api/products', (req, res) => {
   try {
-    const { name, category, price, stock } = req.body;
-    const result = db.prepare('INSERT INTO products (name, category, price, stock) VALUES (?, ?, ?, ?)').run(name, category, price, stock);
-    res.status(201).json({ id: result.lastInsertRowid, name, category, price, stock });
+    const { name, category, price, stock, image } = req.body;
+    const result = db.prepare('INSERT INTO products (name, category, price, stock, image) VALUES (?, ?, ?, ?, ?)').run(name, category, price, stock, image || '');
+    res.status(201).json({ id: result.lastInsertRowid, name, category, price, stock, image: image || '' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -180,10 +181,10 @@ app.post('/api/products', (req, res) => {
 
 app.put('/api/products/:id', (req, res) => {
   try {
-    const { name, category, price, stock } = req.body;
-    const result = db.prepare('UPDATE products SET name=?, category=?, price=?, stock=? WHERE id=?').run(name, category, price, stock, req.params.id);
+    const { name, category, price, stock, image } = req.body;
+    const result = db.prepare('UPDATE products SET name=?, category=?, price=?, stock=?, image=? WHERE id=?').run(name, category, price, stock, image || '', req.params.id);
     if (result.changes === 0) return res.status(404).json({ error: 'Product not found' });
-    res.json({ id: Number(req.params.id), name, category, price, stock });
+    res.json({ id: Number(req.params.id), name, category, price, stock, image: image || '' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
