@@ -99,9 +99,24 @@ let isConnected = false;
 
 async function connectDB() {
   if (isConnected) return;
-  await mongoose.connect(process.env.MONGO_URI);
+  if (!process.env.MONGO_URI) throw new Error('MONGO_URI env variable is not set');
+  await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
   isConnected = true;
 }
+
+// Debug endpoint to check connection
+app.get('/api/debug', async (req, res) => {
+  try {
+    const uri = process.env.MONGO_URI;
+    const masked = uri ? uri.replace(/:([^@]+)@/, ':****@') : 'NOT SET';
+    await connectDB();
+    res.json({ status: 'connected', uri: masked });
+  } catch (err) {
+    const uri = process.env.MONGO_URI;
+    const masked = uri ? uri.replace(/:([^@]+)@/, ':****@') : 'NOT SET';
+    res.status(500).json({ status: 'failed', error: err.message, uri: masked });
+  }
+});
 
 // ---- API Routes ----
 
