@@ -235,16 +235,86 @@
     });
   });
 
+  // ---- Sync Products with Database ----
+  var API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : '/api';
+
+  function syncProductsWithDB() {
+    fetch(API_BASE + '/products')
+      .then(function (res) { return res.json(); })
+      .then(function (dbProducts) {
+        // Build a map of product names to their data
+        var productMap = {};
+        dbProducts.forEach(function (p) {
+          productMap[p.name] = p;
+        });
+
+        // Check each product card on the page
+        document.querySelectorAll('.product-card').forEach(function (card) {
+          var btn = card.querySelector('.btn-add-cart');
+          if (!btn) return;
+          var productName = btn.getAttribute('data-product');
+          var dbProduct = productMap[productName];
+
+          if (!dbProduct) {
+            // Product was deleted from admin — hide the card
+            card.style.display = 'none';
+          } else {
+            // Update price from database
+            card.style.display = '';
+            btn.setAttribute('data-price', dbProduct.price);
+            var priceCurrentEl = card.querySelector('.price-current');
+            if (priceCurrentEl) {
+              priceCurrentEl.textContent = '$' + dbProduct.price.toFixed(2);
+            }
+
+            // Show out of stock state
+            if (dbProduct.stock === 'Out of Stock') {
+              btn.textContent = 'OUT OF STOCK';
+              btn.disabled = true;
+              btn.style.opacity = '0.5';
+              btn.style.cursor = 'not-allowed';
+            }
+          }
+        });
+
+        // Also sync the special product sections (Shilajit & Tumoro)
+        document.querySelectorAll('.special-product').forEach(function (section) {
+          var btn = section.querySelector('.btn-add-cart');
+          if (!btn) return;
+          var productName = btn.getAttribute('data-product');
+          var dbProduct = productMap[productName];
+
+          if (!dbProduct) {
+            section.style.display = 'none';
+          } else {
+            section.style.display = '';
+            btn.setAttribute('data-price', dbProduct.price);
+            var priceCurrentEl = section.querySelector('.special-price-current');
+            if (priceCurrentEl) {
+              priceCurrentEl.textContent = '$' + dbProduct.price.toFixed(2);
+            }
+          }
+        });
+      })
+      .catch(function (err) {
+        console.warn('Could not sync products with database:', err);
+      });
+  }
+
   // ---- Initialize ----
   document.addEventListener('DOMContentLoaded', function () {
     initScrollAnimations();
     handleScroll();
+    syncProductsWithDB();
   });
 
   // If DOM is already loaded
   if (document.readyState !== 'loading') {
     initScrollAnimations();
     handleScroll();
+    syncProductsWithDB();
   }
 
 })();
