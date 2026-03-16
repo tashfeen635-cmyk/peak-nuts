@@ -338,21 +338,42 @@
   var removeImageBtn = document.getElementById('removeImageBtn');
   var hiddenImageInput = document.getElementById('productImage');
 
+  function compressImage(file, maxW, maxH, quality, callback) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.width;
+        var h = img.height;
+        if (w > maxW || h > maxH) {
+          var ratio = Math.min(maxW / w, maxH / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        callback(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   fileInput.addEventListener('change', function () {
     var file = this.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      showToast('Image must be under 2MB', 'error');
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Image must be under 10MB', 'error');
       this.value = '';
       return;
     }
-    var reader = new FileReader();
-    reader.onload = function (e) {
-      hiddenImageInput.value = e.target.result;
-      imagePreview.src = e.target.result;
+    compressImage(file, 800, 800, 0.7, function (base64) {
+      hiddenImageInput.value = base64;
+      imagePreview.src = base64;
       imagePreviewWrap.style.display = 'inline-block';
-    };
-    reader.readAsDataURL(file);
+    });
   });
 
   removeImageBtn.addEventListener('click', function () {

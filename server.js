@@ -5,7 +5,7 @@ const path = require('path');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // ---- SQLite Setup ----
 const db = new Database(path.join(__dirname, 'peaknuts.db'));
