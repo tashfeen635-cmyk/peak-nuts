@@ -543,6 +543,64 @@ input, select, textarea {
   color: #ccc;
 }
 
+/* ========== FILE INPUT & IMAGE PREVIEW ========== */
+.file-input {
+  padding: 10px 14px !important;
+  border: 2px dashed #d0d0d0 !important;
+  border-radius: 8px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.file-input:hover {
+  border-color: var(--primary) !important;
+}
+
+.file-input:focus {
+  border-color: var(--primary) !important;
+  outline: none;
+}
+
+.image-preview-wrap {
+  position: relative;
+  display: inline-block;
+  margin-top: 10px;
+}
+
+.image-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 2px solid #e0e0e0;
+  display: block;
+}
+
+.btn-remove-image {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: var(--white);
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid var(--white);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: background var(--transition);
+}
+
+.btn-remove-image:hover {
+  background: var(--danger-dark);
+}
+
 /* ========== STATUS BADGES ========== */
 .badge {
   display: inline-block;

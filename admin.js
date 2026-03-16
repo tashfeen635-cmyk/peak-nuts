@@ -310,11 +310,17 @@
     productModalOverlay.classList.remove('active');
     productForm.reset();
     productEditId.value = '';
+    document.getElementById('productImage').value = '';
+    document.getElementById('imagePreviewWrap').style.display = 'none';
+    document.getElementById('imagePreview').src = '';
   }
 
   btnAddProduct.addEventListener('click', function () {
     productEditId.value = '';
     productForm.reset();
+    hiddenImageInput.value = '';
+    imagePreview.src = '';
+    imagePreviewWrap.style.display = 'none';
     openProductModal('Add Product');
   });
 
@@ -323,6 +329,37 @@
 
   productModalOverlay.addEventListener('click', function (e) {
     if (e.target === productModalOverlay) closeProductModal();
+  });
+
+  // ---- FILE INPUT: convert to base64 and show preview ----
+  var fileInput = document.getElementById('productImageFile');
+  var imagePreview = document.getElementById('imagePreview');
+  var imagePreviewWrap = document.getElementById('imagePreviewWrap');
+  var removeImageBtn = document.getElementById('removeImageBtn');
+  var hiddenImageInput = document.getElementById('productImage');
+
+  fileInput.addEventListener('change', function () {
+    var file = this.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Image must be under 2MB', 'error');
+      this.value = '';
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      hiddenImageInput.value = e.target.result;
+      imagePreview.src = e.target.result;
+      imagePreviewWrap.style.display = 'inline-block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  removeImageBtn.addEventListener('click', function () {
+    hiddenImageInput.value = '';
+    imagePreview.src = '';
+    imagePreviewWrap.style.display = 'none';
+    fileInput.value = '';
   });
 
   function openEditProduct(id) {
@@ -338,6 +375,14 @@
     document.getElementById('productPrice').value = product.price;
     document.getElementById('productStock').value = product.stock;
     document.getElementById('productImage').value = product.image || '';
+    // Show existing image in preview
+    if (product.image) {
+      imagePreview.src = product.image;
+      imagePreviewWrap.style.display = 'inline-block';
+    } else {
+      imagePreview.src = '';
+      imagePreviewWrap.style.display = 'none';
+    }
     openProductModal('Edit Product');
   }
 
