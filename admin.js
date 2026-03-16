@@ -14,6 +14,7 @@
   var products = [];
   var orders = [];
   var subscribers = [];
+  var currentProductFilter = 'all';
   var revenueData = { labels: [], values: [] };
 
   // ---- API HELPERS ----
@@ -198,6 +199,17 @@
   sidebarToggle.addEventListener('click', openSidebar);
   sidebarOverlay.addEventListener('click', closeSidebar);
 
+  // ---- PRODUCT FILTER TABS ----
+  var filterTabs = document.querySelectorAll('#productFilterTabs .filter-tab');
+  filterTabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      filterTabs.forEach(function (t) { t.classList.remove('active'); });
+      this.classList.add('active');
+      currentProductFilter = this.getAttribute('data-filter');
+      renderProducts();
+    });
+  });
+
   // ---- DASHBOARD RENDERING ----
   function renderDashboard() {
     document.getElementById('statRevenue').textContent = formatCurrency(calcTotalRevenue());
@@ -250,19 +262,53 @@
 
   // ---- PRODUCTS RENDERING ----
   function renderProducts() {
+    // Update tab counts
+    var counts = { all: products.length, popular: 0, trending: 0, bestselling: 0, none: 0 };
+    for (var c = 0; c < products.length; c++) {
+      var sec = products[c].section || '';
+      if (sec === 'popular') counts.popular++;
+      else if (sec === 'trending') counts.trending++;
+      else if (sec === 'bestselling') counts.bestselling++;
+      else counts.none++;
+    }
+    var countAll = document.getElementById('countAll');
+    var countPopular = document.getElementById('countPopular');
+    var countTrending = document.getElementById('countTrending');
+    var countBestselling = document.getElementById('countBestselling');
+    var countNone = document.getElementById('countNone');
+    if (countAll) countAll.textContent = counts.all;
+    if (countPopular) countPopular.textContent = counts.popular;
+    if (countTrending) countTrending.textContent = counts.trending;
+    if (countBestselling) countBestselling.textContent = counts.bestselling;
+    if (countNone) countNone.textContent = counts.none;
+
+    // Filter products
+    var filtered = [];
+    for (var f = 0; f < products.length; f++) {
+      var pSec = products[f].section || '';
+      if (currentProductFilter === 'all') filtered.push(products[f]);
+      else if (currentProductFilter === 'none' && !pSec) filtered.push(products[f]);
+      else if (pSec === currentProductFilter) filtered.push(products[f]);
+    }
+
     var tbody = document.getElementById('productsTableBody');
     var html = '';
-    for (var i = 0; i < products.length; i++) {
-      var p = products[i];
+    for (var i = 0; i < filtered.length; i++) {
+      var p = filtered[i];
       var imgCell = p.image
         ? '<td><img class="product-thumb" src="' + escapeHtml(p.image) + '" alt="' + escapeHtml(p.name) + '"></td>'
         : '<td><div class="product-thumb-placeholder"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></div></td>';
+      var sectionLabel = '';
+      if (p.section === 'popular') sectionLabel = 'Popular';
+      else if (p.section === 'trending') sectionLabel = 'Trending';
+      else if (p.section === 'bestselling') sectionLabel = 'Best Selling';
       html += '<tr>' +
         imgCell +
         '<td><strong>' + escapeHtml(p.name) + '</strong></td>' +
         '<td>' + escapeHtml(p.category) + '</td>' +
         '<td>' + formatCurrency(p.price) + '</td>' +
         '<td><span class="badge ' + stockBadgeClass(p.stock) + '">' + p.stock + '</span></td>' +
+        '<td>' + (sectionLabel ? '<span class="badge badge-in-stock">' + sectionLabel + '</span>' : '<span style="color:#999">—</span>') + '</td>' +
         '<td><div class="td-actions">' +
         '<button class="btn-icon" data-edit-id="' + getId(p) + '" title="Edit">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>' +
@@ -313,6 +359,12 @@
     document.getElementById('productImage').value = '';
     document.getElementById('imagePreviewWrap').style.display = 'none';
     document.getElementById('imagePreview').src = '';
+    document.getElementById('productSection').value = '';
+    document.getElementById('productBadge').value = '';
+    document.getElementById('productOldPrice').value = '';
+    document.getElementById('productRating').value = '5';
+    document.getElementById('productDescription').value = '';
+    document.getElementById('productUrduName').value = '';
   }
 
   btnAddProduct.addEventListener('click', function () {
@@ -396,6 +448,12 @@
     document.getElementById('productPrice').value = product.price;
     document.getElementById('productStock').value = product.stock;
     document.getElementById('productImage').value = product.image || '';
+    document.getElementById('productSection').value = product.section || '';
+    document.getElementById('productBadge').value = product.badge || '';
+    document.getElementById('productOldPrice').value = product.oldPrice || '';
+    document.getElementById('productRating').value = product.rating || 5;
+    document.getElementById('productDescription').value = product.description || '';
+    document.getElementById('productUrduName').value = product.urduName || '';
     // Show existing image in preview
     if (product.image) {
       imagePreview.src = product.image;
@@ -414,8 +472,14 @@
     var price = parseFloat(document.getElementById('productPrice').value);
     var stock = document.getElementById('productStock').value;
     var image = document.getElementById('productImage').value.trim();
+    var section = document.getElementById('productSection').value;
+    var badge = document.getElementById('productBadge').value;
+    var oldPrice = parseFloat(document.getElementById('productOldPrice').value) || 0;
+    var rating = parseInt(document.getElementById('productRating').value) || 5;
+    var description = document.getElementById('productDescription').value.trim();
+    var urduName = document.getElementById('productUrduName').value.trim();
     var editId = productEditId.value;
-    var productData = { name: name, category: category, price: price, stock: stock, image: image };
+    var productData = { name: name, category: category, price: price, stock: stock, image: image, section: section, badge: badge, oldPrice: oldPrice, rating: rating, description: description, urduName: urduName };
 
     if (editId) {
       // Update via API

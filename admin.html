@@ -196,6 +196,13 @@
         </button>
       </div>
       <div class="card">
+        <div class="filter-tabs" id="productFilterTabs">
+          <button class="filter-tab active" data-filter="all">All <span class="tab-count" id="countAll">0</span></button>
+          <button class="filter-tab" data-filter="popular">Popular <span class="tab-count" id="countPopular">0</span></button>
+          <button class="filter-tab" data-filter="trending">Trending <span class="tab-count" id="countTrending">0</span></button>
+          <button class="filter-tab" data-filter="bestselling">Best Selling <span class="tab-count" id="countBestselling">0</span></button>
+          <button class="filter-tab" data-filter="none">Unassigned <span class="tab-count" id="countNone">0</span></button>
+        </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
@@ -205,6 +212,7 @@
                 <th>Category</th>
                 <th>Price</th>
                 <th>Stock</th>
+                <th>Section</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -318,6 +326,50 @@
             <button type="button" class="btn-remove-image" id="removeImageBtn" title="Remove image">&times;</button>
           </div>
           <input type="hidden" id="productImage" value="">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productSection">Store Section</label>
+            <select id="productSection">
+              <option value="">None</option>
+              <option value="popular">Popular Products</option>
+              <option value="trending">Trending Now</option>
+              <option value="bestselling">Best Selling</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="productBadge">Badge</label>
+            <select id="productBadge">
+              <option value="">None</option>
+              <option value="SALE">SALE</option>
+              <option value="NEW">NEW</option>
+              <option value="HOT">HOT</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productOldPrice">Old Price ($) <small style="color:#999">optional, for strikethrough</small></label>
+            <input type="number" id="productOldPrice" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label for="productRating">Rating</label>
+            <select id="productRating">
+              <option value="5">5 Stars</option>
+              <option value="4">4 Stars</option>
+              <option value="3">3 Stars</option>
+              <option value="2">2 Stars</option>
+              <option value="1">1 Star</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="productDescription">Short Description <small style="color:#999">optional</small></label>
+          <input type="text" id="productDescription" placeholder="e.g. Himalayan resin for energy & vitality">
+        </div>
+        <div class="form-group">
+          <label for="productUrduName">Urdu Name <small style="color:#999">optional, RTL</small></label>
+          <input type="text" id="productUrduName" placeholder="e.g. بادام" dir="rtl" style="text-align:right;">
         </div>
         <input type="hidden" id="productEditId" value="">
         <div class="modal-footer">

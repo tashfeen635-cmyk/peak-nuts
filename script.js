@@ -134,15 +134,15 @@
     });
   }
 
-  // Add to cart buttons
-  document.querySelectorAll('.btn-add-cart').forEach(function (btn) {
+  // Add to cart buttons for special product sections (static HTML)
+  document.querySelectorAll('.special-product .btn-add-cart').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var name = this.getAttribute('data-product');
       var price = parseFloat(this.getAttribute('data-price'));
 
       // Find the product image
-      var card = this.closest('.product-card');
-      var img = card.querySelector('.product-img img');
+      var section = this.closest('.special-product');
+      var img = section ? section.querySelector('.special-img-wrapper img') : null;
       var imageSrc = img ? img.getAttribute('src') : '';
 
       cart.push({
@@ -235,87 +235,189 @@
     });
   });
 
-  // ---- Sync Products with Database ----
+  // ---- API Base ----
   var API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000/api'
     : '/api';
 
-  function syncProductsWithDB() {
+  // ---- Helpers ----
+  function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  function buildStars(rating) {
+    var r = parseInt(rating) || 5;
+    var html = '';
+    for (var i = 0; i < 5; i++) {
+      html += i < r ? '&#9733;' : '&#9734;';
+    }
+    return html;
+  }
+
+  function buildProductCardHTML(p) {
+    var id = p._id || p.id;
+    var imgSrc = escapeHtml(p.image || '');
+    var name = escapeHtml(p.name);
+    var isOutOfStock = p.stock === 'Out of Stock';
+
+    // Badge
+    var badgeHtml = '';
+    if (p.badge) {
+      var badgeClass = p.badge.toLowerCase();
+      badgeHtml = '<span class="product-badge ' + badgeClass + '">' + escapeHtml(p.badge) + '</span>';
+    }
+
+    // Button
+    var btnHtml = '';
+    if (isOutOfStock) {
+      btnHtml = '<button class="btn-add-cart" data-product="' + name + '" data-price="' + p.price + '" disabled style="opacity:0.5;cursor:not-allowed">OUT OF STOCK</button>';
+    } else {
+      btnHtml = '<button class="btn-add-cart" data-product="' + name + '" data-price="' + p.price + '">ADD TO CART</button>';
+    }
+
+    // Urdu name
+    var urduHtml = '';
+    if (p.urduName) {
+      urduHtml = '<span class="product-name-urdu">' + escapeHtml(p.urduName) + '</span>';
+    }
+
+    // Description
+    var descHtml = '';
+    if (p.description) {
+      descHtml = '<p class="product-desc">' + escapeHtml(p.description) + '</p>';
+    }
+
+    // Price
+    var priceHtml = '';
+    if (p.oldPrice && p.oldPrice > 0) {
+      priceHtml = '<span class="price-old">$' + p.oldPrice.toFixed(2) + '</span>';
+    }
+    priceHtml += '<span class="price-current">$' + p.price.toFixed(2) + '</span>';
+
+    return '<div class="product-card">' +
+      '<div class="product-img">' +
+        '<img src="' + imgSrc + '" alt="' + name + '" loading="lazy">' +
+        '<div class="product-actions">' + btnHtml + '</div>' +
+        badgeHtml +
+      '</div>' +
+      '<div class="product-info">' +
+        '<h3 class="product-name">' + name + '</h3>' +
+        urduHtml +
+        descHtml +
+        '<div class="product-rating"><span class="stars">' + buildStars(p.rating) + '</span></div>' +
+        '<div class="product-price">' + priceHtml + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // ---- Attach cart handlers to dynamically created buttons ----
+  function attachCartHandlers(container) {
+    container.querySelectorAll('.btn-add-cart').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (this.disabled) return;
+        var name = this.getAttribute('data-product');
+        var price = parseFloat(this.getAttribute('data-price'));
+
+        var card = this.closest('.product-card');
+        var img = card ? card.querySelector('.product-img img') : null;
+        var imageSrc = img ? img.getAttribute('src') : '';
+
+        cart.push({ name: name, price: price, image: imageSrc });
+        updateCartUI();
+        openCart();
+
+        var original = this.textContent;
+        this.textContent = 'ADDED!';
+        this.style.background = '#c48fa2';
+        var self = this;
+        setTimeout(function () {
+          self.textContent = original;
+          self.style.background = '';
+        }, 1200);
+      });
+    });
+  }
+
+  // ---- Sync special product sections (Shilajit, Tumoro hero sections) ----
+  function syncSpecialProducts(productMap) {
+    document.querySelectorAll('.special-product').forEach(function (section) {
+      var btn = section.querySelector('.btn-add-cart');
+      if (!btn) return;
+      var productName = btn.getAttribute('data-product');
+      var dbProduct = productMap[productName];
+
+      if (!dbProduct) {
+        section.style.display = 'none';
+      } else {
+        section.style.display = '';
+        btn.setAttribute('data-price', dbProduct.price);
+        var priceCurrentEl = section.querySelector('.special-price-current');
+        if (priceCurrentEl) {
+          priceCurrentEl.textContent = '$' + dbProduct.price.toFixed(2);
+        }
+        if (dbProduct.image) {
+          var imgEl = section.querySelector('.special-img-wrapper img');
+          if (imgEl) {
+            imgEl.src = dbProduct.image;
+          }
+        }
+      }
+    });
+  }
+
+  // ---- Render section products from DB ----
+  function renderSectionProducts() {
     fetch(API_BASE + '/products')
       .then(function (res) { return res.json(); })
       .then(function (dbProducts) {
-        // Build a map of product names to their data
+        // Group products by section
+        var sections = { popular: [], trending: [], bestselling: [] };
         var productMap = {};
         dbProducts.forEach(function (p) {
           productMap[p.name] = p;
-        });
-
-        // Check each product card on the page
-        document.querySelectorAll('.product-card').forEach(function (card) {
-          var btn = card.querySelector('.btn-add-cart');
-          if (!btn) return;
-          var productName = btn.getAttribute('data-product');
-          var dbProduct = productMap[productName];
-
-          if (!dbProduct) {
-            // Product was deleted from admin — hide the card
-            card.style.display = 'none';
-          } else {
-            // Update price from database
-            card.style.display = '';
-            btn.setAttribute('data-price', dbProduct.price);
-            var priceCurrentEl = card.querySelector('.price-current');
-            if (priceCurrentEl) {
-              priceCurrentEl.textContent = '$' + dbProduct.price.toFixed(2);
-            }
-
-            // Update image from database
-            if (dbProduct.image) {
-              var imgEl = card.querySelector('.product-img img');
-              if (imgEl) {
-                imgEl.src = dbProduct.image;
-              }
-            }
-
-            // Show out of stock state
-            if (dbProduct.stock === 'Out of Stock') {
-              btn.textContent = 'OUT OF STOCK';
-              btn.disabled = true;
-              btn.style.opacity = '0.5';
-              btn.style.cursor = 'not-allowed';
-            }
+          if (p.section && sections[p.section]) {
+            sections[p.section].push(p);
           }
         });
 
-        // Also sync the special product sections (Shilajit & Tumoro)
-        document.querySelectorAll('.special-product').forEach(function (section) {
-          var btn = section.querySelector('.btn-add-cart');
-          if (!btn) return;
-          var productName = btn.getAttribute('data-product');
-          var dbProduct = productMap[productName];
+        // Render each section grid
+        var gridMap = {
+          popular: document.getElementById('popularGrid'),
+          trending: document.getElementById('trendingGrid'),
+          bestselling: document.getElementById('bestsellingGrid')
+        };
 
-          if (!dbProduct) {
-            section.style.display = 'none';
+        for (var key in gridMap) {
+          var grid = gridMap[key];
+          if (!grid) continue;
+          var items = sections[key];
+          var parentSection = grid.closest('.products-section');
+
+          if (items.length === 0) {
+            grid.innerHTML = '';
+            if (parentSection) parentSection.style.display = 'none';
           } else {
-            section.style.display = '';
-            btn.setAttribute('data-price', dbProduct.price);
-            var priceCurrentEl = section.querySelector('.special-price-current');
-            if (priceCurrentEl) {
-              priceCurrentEl.textContent = '$' + dbProduct.price.toFixed(2);
+            if (parentSection) parentSection.style.display = '';
+            var html = '';
+            for (var i = 0; i < items.length; i++) {
+              html += buildProductCardHTML(items[i]);
             }
-
-            // Update image from database
-            if (dbProduct.image) {
-              var imgEl = section.querySelector('.special-img-wrapper img');
-              if (imgEl) {
-                imgEl.src = dbProduct.image;
-              }
-            }
+            grid.innerHTML = html;
+            attachCartHandlers(grid);
           }
-        });
+        }
+
+        // Sync special product hero sections
+        syncSpecialProducts(productMap);
+
+        // Re-run scroll animations for new cards
+        initScrollAnimations();
       })
       .catch(function (err) {
-        console.warn('Could not sync products with database:', err);
+        console.warn('Could not load products from database:', err);
       });
   }
 
@@ -323,14 +425,14 @@
   document.addEventListener('DOMContentLoaded', function () {
     initScrollAnimations();
     handleScroll();
-    syncProductsWithDB();
+    renderSectionProducts();
   });
 
   // If DOM is already loaded
   if (document.readyState !== 'loading') {
     initScrollAnimations();
     handleScroll();
-    syncProductsWithDB();
+    renderSectionProducts();
   }
 
 })();

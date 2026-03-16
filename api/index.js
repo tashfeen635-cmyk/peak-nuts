@@ -6,11 +6,17 @@ app.use(express.json({ limit: '10mb' }));
 
 // ---- Mongoose Schemas ----
 const productSchema = new mongoose.Schema({
-  name:     { type: String, required: true },
-  category: { type: String, required: true },
-  price:    { type: Number, required: true },
-  stock:    { type: String, required: true },
-  image:    { type: String, default: '' }
+  name:        { type: String, required: true },
+  category:    { type: String, required: true },
+  price:       { type: Number, required: true },
+  stock:       { type: String, required: true },
+  image:       { type: String, default: '' },
+  section:     { type: String, default: '' },
+  badge:       { type: String, default: '' },
+  oldPrice:    { type: Number, default: 0 },
+  rating:      { type: Number, default: 5 },
+  description: { type: String, default: '' },
+  urduName:    { type: String, default: '' }
 });
 
 const orderSchema = new mongoose.Schema({
@@ -42,29 +48,29 @@ const Revenue    = mongoose.models.Revenue    || mongoose.model('Revenue', reven
 
 // ---- Seed Data ----
 const seedProducts = [
-  { name: 'Organic Almonds', category: 'Nuts', price: 14.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?w=400&h=500&fit=crop&q=80' },
-  { name: 'Raw Cashews', category: 'Nuts', price: 16.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1599599810694-b5b37304c041?w=400&h=500&fit=crop&q=80' },
-  { name: 'Roasted Pistachios', category: 'Nuts', price: 19.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400&h=500&fit=crop&q=80' },
-  { name: 'Brazil Nuts', category: 'Nuts', price: 22.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=500&fit=crop&q=80' },
-  { name: 'Walnut Halves', category: 'Nuts', price: 15.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=400&h=500&fit=crop&q=80' },
-  { name: 'Macadamia Nuts', category: 'Nuts', price: 28.00, stock: 'Low Stock', image: 'https://images.unsplash.com/photo-1509721434272-b79147e0e708?w=400&h=500&fit=crop&q=80' },
-  { name: 'Pecan Pieces', category: 'Nuts', price: 20.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1564424224827-cd24b8915874?w=400&h=500&fit=crop&q=80' },
-  { name: 'Hazelnut Premium', category: 'Nuts', price: 24.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1526081715791-7c538f86060e?w=400&h=500&fit=crop&q=80' },
-  { name: 'Shilajit Resin', category: 'Herbs & Supplements', price: 59.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400&h=500&fit=crop&q=80' },
-  { name: 'Shilajit Capsules', category: 'Herbs & Supplements', price: 45.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=500&fit=crop&q=80' },
-  { name: 'Ashwagandha', category: 'Herbs & Supplements', price: 24.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400&h=500&fit=crop&q=80' },
-  { name: 'Panax Ginseng', category: 'Herbs & Supplements', price: 32.00, stock: 'Low Stock', image: 'https://images.unsplash.com/photo-1580541832626-2a7131ee809f?w=400&h=500&fit=crop&q=80' },
-  { name: 'Triphala', category: 'Herbs & Supplements', price: 20.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=500&fit=crop&q=80' },
-  { name: 'Boswellia', category: 'Herbs & Supplements', price: 26.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?w=400&h=500&fit=crop&q=80' },
-  { name: 'Maca Root', category: 'Herbs & Supplements', price: 28.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=500&fit=crop&q=80' },
-  { name: 'Gotu Kola', category: 'Herbs & Supplements', price: 22.00, stock: 'Out of Stock', image: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?w=400&h=500&fit=crop&q=80' },
-  { name: 'Tumoro Wild Thyme Tea', category: 'Teas', price: 25.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&h=500&fit=crop&q=80' },
-  { name: 'Tumoro Tea Loose Leaf', category: 'Teas', price: 22.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=500&fit=crop&q=80' },
-  { name: 'Honey Roast Mix', category: 'Mixes & Butters', price: 17.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=400&h=500&fit=crop&q=80' },
-  { name: 'Trail Mix Deluxe', category: 'Mixes & Butters', price: 16.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1606923829579-0cb981a83e2e?w=400&h=500&fit=crop&q=80' },
-  { name: 'Mixed Nut Butter', category: 'Mixes & Butters', price: 12.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=400&h=500&fit=crop&q=80' },
-  { name: 'Turmeric Curcumin', category: 'Spices', price: 18.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1455853828816-0c301a011711?w=400&h=500&fit=crop&q=80' },
-  { name: 'Cinnamon (Dal Chini)', category: 'Spices', price: 12.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1471943311424-646960669fbc?w=400&h=500&fit=crop&q=80' }
+  { name: 'Organic Almonds', category: 'Nuts', price: 14.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?w=400&h=500&fit=crop&q=80', section: 'popular', badge: 'SALE', oldPrice: 18, rating: 5, description: '', urduName: '' },
+  { name: 'Raw Cashews', category: 'Nuts', price: 16.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1599599810694-b5b37304c041?w=400&h=500&fit=crop&q=80', section: 'popular', badge: '', oldPrice: 0, rating: 4, description: '', urduName: '' },
+  { name: 'Roasted Pistachios', category: 'Nuts', price: 19.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400&h=500&fit=crop&q=80', section: 'popular', badge: '', oldPrice: 0, rating: 5, description: '', urduName: '' },
+  { name: 'Brazil Nuts', category: 'Nuts', price: 22.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=500&fit=crop&q=80', section: 'popular', badge: 'NEW', oldPrice: 0, rating: 4, description: '', urduName: '' },
+  { name: 'Walnut Halves', category: 'Nuts', price: 15.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1606890737304-57a1ca8a5b62?w=400&h=500&fit=crop&q=80', section: 'trending', badge: '', oldPrice: 0, rating: 5, description: '', urduName: '' },
+  { name: 'Macadamia Nuts', category: 'Nuts', price: 28.00, stock: 'Low Stock', image: 'https://images.unsplash.com/photo-1509721434272-b79147e0e708?w=400&h=500&fit=crop&q=80', section: 'trending', badge: 'SALE', oldPrice: 34, rating: 4, description: '', urduName: '' },
+  { name: 'Pecan Pieces', category: 'Nuts', price: 20.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1564424224827-cd24b8915874?w=400&h=500&fit=crop&q=80', section: 'trending', badge: '', oldPrice: 0, rating: 5, description: '', urduName: '' },
+  { name: 'Hazelnut Premium', category: 'Nuts', price: 24.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1526081715791-7c538f86060e?w=400&h=500&fit=crop&q=80', section: 'bestselling', badge: '', oldPrice: 0, rating: 4, description: '', urduName: '' },
+  { name: 'Shilajit Resin', category: 'Herbs & Supplements', price: 59.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=400&h=500&fit=crop&q=80', section: 'popular', badge: 'HOT', oldPrice: 79, rating: 5, description: 'Himalayan resin for energy, vitality & cognitive health', urduName: '\u0633\u0644\u0627\u062c\u06cc\u062a' },
+  { name: 'Shilajit Capsules', category: 'Herbs & Supplements', price: 45.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=500&fit=crop&q=80', section: 'trending', badge: 'HOT', oldPrice: 55, rating: 5, description: 'Easy-to-take capsules for daily energy & longevity', urduName: '\u0633\u0644\u0627\u062c\u06cc\u062a \u06a9\u06cc\u067e\u0633\u0648\u0644' },
+  { name: 'Ashwagandha', category: 'Herbs & Supplements', price: 24.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400&h=500&fit=crop&q=80', section: 'popular', badge: '', oldPrice: 0, rating: 5, description: 'Adaptogenic herb for stress, anxiety & muscle growth', urduName: '\u0627\u0634\u0648\u06af\u0646\u062f\u06be\u0627' },
+  { name: 'Panax Ginseng', category: 'Herbs & Supplements', price: 32.00, stock: 'Low Stock', image: 'https://images.unsplash.com/photo-1580541832626-2a7131ee809f?w=400&h=500&fit=crop&q=80', section: 'popular', badge: '', oldPrice: 0, rating: 4, description: 'Boosts energy, fights fatigue & supports cognitive function', urduName: '\u062c\u0646\u0633\u06cc\u0646\u06af' },
+  { name: 'Triphala', category: 'Herbs & Supplements', price: 20.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=500&fit=crop&q=80', section: 'popular', badge: 'NEW', oldPrice: 0, rating: 5, description: 'Three-fruit blend for digestion & anti-inflammatory benefits', urduName: '\u062a\u0631\u067e\u06be\u0644\u0627' },
+  { name: 'Boswellia', category: 'Herbs & Supplements', price: 26.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?w=400&h=500&fit=crop&q=80', section: 'trending', badge: '', oldPrice: 0, rating: 4, description: 'Indian frankincense for inflammation & joint health', urduName: '\u0644\u0648\u0628\u0627\u0646 / \u06a9\u0646\u062f\u0631' },
+  { name: 'Maca Root', category: 'Herbs & Supplements', price: 28.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=500&fit=crop&q=80', section: 'trending', badge: 'HOT', oldPrice: 0, rating: 5, description: 'Andean root for energy, stamina & hormonal balance', urduName: '\u0645\u0627\u06a9\u0627 \u062c\u0691' },
+  { name: 'Gotu Kola', category: 'Herbs & Supplements', price: 22.00, stock: 'Out of Stock', image: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?w=400&h=500&fit=crop&q=80', section: 'trending', badge: '', oldPrice: 0, rating: 4, description: 'Herb of longevity for memory, stress & anxiety relief', urduName: '\u0628\u0631\u06c1\u0645\u06cc \u0628\u0648\u0679\u06cc' },
+  { name: 'Tumoro Wild Thyme Tea', category: 'Teas', price: 25.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&h=500&fit=crop&q=80', section: 'popular', badge: 'HOT', oldPrice: 35, rating: 5, description: 'Caffeine-free herbal tea from Gilgit-Baltistan for immunity', urduName: '\u062a\u0645\u0648\u0631\u0648 / \u062c\u0646\u06af\u0644\u06cc \u0627\u062c\u0648\u0627\u0626\u0646' },
+  { name: 'Tumoro Tea Loose Leaf', category: 'Teas', price: 22.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=500&fit=crop&q=80', section: 'trending', badge: 'HOT', oldPrice: 30, rating: 5, description: 'Aromatic Gilgit-Baltistan herbal tea for holistic wellness', urduName: '\u062a\u0645\u0648\u0631\u0648 / \u062c\u0646\u06af\u0644\u06cc \u0627\u062c\u0648\u0627\u0626\u0646' },
+  { name: 'Honey Roast Mix', category: 'Mixes & Butters', price: 17.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1542990253-0d0f5be5f0ed?w=400&h=500&fit=crop&q=80', section: 'trending', badge: 'NEW', oldPrice: 0, rating: 5, description: '', urduName: '' },
+  { name: 'Trail Mix Deluxe', category: 'Mixes & Butters', price: 16.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1606923829579-0cb981a83e2e?w=400&h=500&fit=crop&q=80', section: 'bestselling', badge: '', oldPrice: 0, rating: 5, description: '', urduName: '' },
+  { name: 'Mixed Nut Butter', category: 'Mixes & Butters', price: 12.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1604068549290-dea0e4a305ca?w=400&h=500&fit=crop&q=80', section: 'bestselling', badge: '', oldPrice: 0, rating: 5, description: '', urduName: '' },
+  { name: 'Turmeric Curcumin', category: 'Spices', price: 18.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1455853828816-0c301a011711?w=400&h=500&fit=crop&q=80', section: 'popular', badge: 'SALE', oldPrice: 22, rating: 5, description: 'Powerful antioxidant & anti-inflammatory for heart & mood', urduName: '\u06c1\u0644\u062f\u06cc' },
+  { name: 'Cinnamon (Dal Chini)', category: 'Spices', price: 12.00, stock: 'In Stock', image: 'https://images.unsplash.com/photo-1471943311424-646960669fbc?w=400&h=500&fit=crop&q=80', section: 'trending', badge: '', oldPrice: 0, rating: 5, description: 'Helps manage blood sugar & acts as anti-inflammatory', urduName: '\u062f\u0627\u0631 \u0686\u06cc\u0646\u06cc' }
 ];
 
 const seedOrders = [
@@ -140,6 +146,23 @@ app.post('/api/seed', async (req, res) => {
     for (const p of noImage) {
       if (imageMap[p.name]) {
         p.image = imageMap[p.name];
+        await p.save();
+      }
+    }
+
+    // Migrate: add section data to existing products that don't have it
+    const sectionMap = {};
+    seedProducts.forEach(function (p) { sectionMap[p.name] = p; });
+    const noSection = await Product.find({ $or: [{ section: { $exists: false } }, { section: '' }] });
+    for (const p of noSection) {
+      var seed = sectionMap[p.name];
+      if (seed) {
+        p.section = seed.section || '';
+        p.badge = seed.badge || '';
+        p.oldPrice = seed.oldPrice || 0;
+        p.rating = seed.rating || 5;
+        p.description = seed.description || '';
+        p.urduName = seed.urduName || '';
         await p.save();
       }
     }

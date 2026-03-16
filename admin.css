@@ -480,6 +480,64 @@ input, select, textarea {
   text-align: center;
 }
 
+/* ========== FILTER TABS ========== */
+.filter-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+  border-bottom: 2px solid #f0f0f0;
+  background: var(--card-bg);
+  overflow-x: auto;
+}
+
+.filter-tab {
+  padding: 14px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-light);
+  border: none;
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: color var(--transition);
+}
+
+.filter-tab:hover {
+  color: var(--dark);
+}
+
+.filter-tab.active {
+  color: var(--primary-dark);
+}
+
+.filter-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary-dark);
+  border-radius: 2px 2px 0 0;
+}
+
+.filter-tab .tab-count {
+  display: inline-block;
+  background: #f0f0f0;
+  color: var(--gray);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-left: 6px;
+}
+
+.filter-tab.active .tab-count {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
 /* ========== TABLES ========== */
 .table-wrap {
   overflow-x: auto;
