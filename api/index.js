@@ -86,15 +86,7 @@ const seedOrders = [
   { orderId: 'PN-1010', customer: 'Anna Petrov', status: 'Delivered', date: '2026-02-10', items: [{ name: 'Brazil Nuts', qty: 1, price: 22.00 }, { name: 'Hazelnut Premium', qty: 1, price: 24.00 }, { name: 'Pecan Pieces', qty: 1, price: 20.00 }] }
 ];
 
-const seedSubscribers = [
-  { email: 'sarah.m@gmail.com', date: '2026-01-15' },
-  { email: 'james.parker@outlook.com', date: '2026-01-22' },
-  { email: 'emily.chen@yahoo.com', date: '2026-02-03' },
-  { email: 'mike.torres@gmail.com', date: '2026-02-14' },
-  { email: 'aisha.k@hotmail.com', date: '2026-02-28' },
-  { email: 'david.wilson@gmail.com', date: '2026-03-05' },
-  { email: 'lisa.r@protonmail.com', date: '2026-03-11' }
-];
+const seedSubscribers = [];
 
 const seedRevenue = {
   labels: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
@@ -136,6 +128,10 @@ app.post('/api/seed', async (req, res) => {
     ]);
     if (pc === 0) await Product.insertMany(seedProducts);
     if (oc === 0) await Order.insertMany(seedOrders);
+    // Clean up old fake seed subscribers
+    const fakeEmails = ['sarah.m@gmail.com','james.parker@outlook.com','emily.chen@yahoo.com','mike.torres@gmail.com','aisha.k@hotmail.com','david.wilson@gmail.com','lisa.r@protonmail.com'];
+    await Subscriber.deleteMany({ email: { $in: fakeEmails } });
+
     if (sc === 0) await Subscriber.insertMany(seedSubscribers);
     if (rc === 0) await Revenue.create(seedRevenue);
 
