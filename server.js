@@ -298,6 +298,16 @@ app.get('/api/subscribers', (req, res) => {
   }
 });
 
+app.delete('/api/subscribers/:id', (req, res) => {
+  try {
+    const result = db.prepare('DELETE FROM subscribers WHERE id = ?').run(req.params.id);
+    if (result.changes === 0) return res.status(404).json({ error: 'Subscriber not found' });
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/subscribers', (req, res) => {
   try {
     const { email } = req.body;

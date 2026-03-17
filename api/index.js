@@ -163,9 +163,8 @@ app.post('/api/seed', async (req, res) => {
     ]);
     if (pc === 0) await Product.insertMany(seedProducts);
     if (oc === 0) await Order.insertMany(seedOrders);
-    // Clean up old fake seed subscribers
-    const fakeEmails = ['sarah.m@gmail.com','james.parker@outlook.com','emily.chen@yahoo.com','mike.torres@gmail.com','aisha.k@hotmail.com','david.wilson@gmail.com','lisa.r@protonmail.com'];
-    await Subscriber.deleteMany({ email: { $in: fakeEmails } });
+    // One-time cleanup: clear all old subscribers
+    await Subscriber.deleteMany({});
 
     if (sc === 0) await Subscriber.insertMany(seedSubscribers);
     if (rc === 0) await Revenue.create(seedRevenue);
@@ -269,6 +268,17 @@ app.get('/api/subscribers', async (req, res) => {
   try {
     await connectDB();
     res.json(await Subscriber.find());
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/subscribers/:id', async (req, res) => {
+  try {
+    await connectDB();
+    const sub = await Subscriber.findByIdAndDelete(req.params.id);
+    if (!sub) return res.status(404).json({ error: 'Subscriber not found' });
+    res.json({ message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

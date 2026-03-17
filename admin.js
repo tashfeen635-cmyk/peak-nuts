@@ -685,9 +685,24 @@
         '<td>' + (i + 1) + '</td>' +
         '<td>' + escapeHtml(sub.email) + '</td>' +
         '<td>' + formatDate(sub.date) + '</td>' +
+        '<td><button class="btn-delete-sub" data-id="' + getId(sub) + '" style="background:#e04f3a;color:#fff;border:none;padding:6px 14px;border-radius:4px;font-size:12px;cursor:pointer">Delete</button></td>' +
         '</tr>';
     }
     tbody.innerHTML = html;
+
+    // Attach delete handlers
+    tbody.querySelectorAll('.btn-delete-sub').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = this.getAttribute('data-id');
+        if (!confirm('Delete this subscriber?')) return;
+        apiDelete('/subscribers/' + id).then(function () {
+          showToast('Subscriber deleted', 'success');
+          loadSubscribers().then(function () { renderSubscribers(); });
+        }).catch(function () {
+          showToast('Failed to delete', 'error');
+        });
+      });
+    });
   }
 
   // ---- KEYBOARD SHORTCUTS ----
