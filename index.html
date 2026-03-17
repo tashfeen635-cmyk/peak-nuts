@@ -599,6 +599,47 @@
     </div>
   </div>
 
+  <!-- ========== PRODUCT DETAIL MODAL ========== -->
+  <div class="product-modal-overlay" id="productModalOverlay"></div>
+  <div class="product-modal" id="productModal">
+    <button class="product-modal-close" id="productModalClose" aria-label="Close">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <div class="product-modal-inner">
+      <div class="product-modal-image">
+        <div class="special-img-wrapper">
+          <img id="modalProductImg" src="" alt="" loading="lazy">
+          <div class="special-badge" id="modalProductBadge"></div>
+        </div>
+        <div class="special-img-bg"></div>
+      </div>
+      <div class="product-modal-content">
+        <span class="special-tag" id="modalProductCategory">CATEGORY</span>
+        <h2 class="special-title" id="modalProductName"></h2>
+        <p class="product-modal-urdu" id="modalProductUrdu"></p>
+        <p class="special-description" id="modalProductDesc"></p>
+        <div class="special-benefits" id="modalProductBenefits"></div>
+        <div class="special-pricing">
+          <div class="special-price">
+            <span class="special-price-old" id="modalProductOldPrice"></span>
+            <span class="special-price-current" id="modalProductPrice"></span>
+          </div>
+          <div class="special-rating">
+            <span class="stars" id="modalProductStars"></span>
+            <span class="rating-count" id="modalProductStock"></span>
+          </div>
+        </div>
+        <div class="special-actions">
+          <button class="btn btn-primary btn-add-cart" id="modalAddToCart">ADD TO CART</button>
+          <button class="btn btn-outline" id="modalCloseBtn">GO BACK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ========== BACK TO TOP ========== -->
   <button class="back-to-top" id="backToTop" aria-label="Back to top">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

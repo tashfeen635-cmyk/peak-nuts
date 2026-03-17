@@ -525,6 +525,7 @@
             }
             grid.innerHTML = html;
             attachCartHandlers(grid);
+            attachProductClickHandlers(grid);
           }
         }
 
@@ -635,6 +636,201 @@
           self.textContent = original;
           self.style.background = '';
         }, 1200);
+      });
+    });
+  }
+
+  // ---- Product Detail Modal ----
+  var productModal = document.getElementById('productModal');
+  var productModalOverlay = document.getElementById('productModalOverlay');
+  var productModalClose = document.getElementById('productModalClose');
+  var modalCloseBtn = document.getElementById('modalCloseBtn');
+
+  function openProductModal(product) {
+    // Populate modal with product data
+    document.getElementById('modalProductImg').src = product.image || '';
+    document.getElementById('modalProductImg').alt = product.name || '';
+    document.getElementById('modalProductName').textContent = product.name || '';
+    document.getElementById('modalProductCategory').textContent = (product.category || 'PRODUCT').toUpperCase();
+    document.getElementById('modalProductDesc').textContent = product.description || 'Premium quality organic product, handpicked and packed fresh for your family.';
+
+    // Urdu name
+    var urduEl = document.getElementById('modalProductUrdu');
+    urduEl.textContent = product.urduName || '';
+
+    // Badge
+    var badgeEl = document.getElementById('modalProductBadge');
+    if (product.badge) {
+      badgeEl.textContent = product.badge;
+      badgeEl.style.display = '';
+    } else {
+      badgeEl.textContent = '';
+      badgeEl.style.display = 'none';
+    }
+
+    // Price
+    var oldPriceEl = document.getElementById('modalProductOldPrice');
+    if (product.oldPrice && product.oldPrice > 0) {
+      oldPriceEl.textContent = '$' + product.oldPrice.toFixed(2);
+      oldPriceEl.style.display = '';
+    } else {
+      oldPriceEl.textContent = '';
+      oldPriceEl.style.display = 'none';
+    }
+    document.getElementById('modalProductPrice').textContent = '$' + product.price.toFixed(2);
+
+    // Stars
+    document.getElementById('modalProductStars').innerHTML = buildStars(product.rating);
+
+    // Stock
+    var stockEl = document.getElementById('modalProductStock');
+    stockEl.textContent = product.stock === 'In Stock' ? '(' + product.stock + ')' : '(' + (product.stock || 'In Stock') + ')';
+
+    // Benefits - generate from description or use defaults
+    var benefitsEl = document.getElementById('modalProductBenefits');
+    var benefits = getBenefitsForProduct(product);
+    var benefitsHtml = '';
+    for (var i = 0; i < benefits.length; i++) {
+      benefitsHtml += '<div class="benefit-item">' +
+        '<div class="benefit-icon">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>' +
+        '</div>' +
+        '<div class="benefit-text">' +
+          '<strong>' + escapeHtml(benefits[i].title) + '</strong>' +
+          '<span>' + escapeHtml(benefits[i].text) + '</span>' +
+        '</div>' +
+      '</div>';
+    }
+    benefitsEl.innerHTML = benefitsHtml;
+
+    // Add to cart button
+    var addBtn = document.getElementById('modalAddToCart');
+    addBtn.setAttribute('data-product', product.name);
+    addBtn.setAttribute('data-price', product.price);
+    addBtn.disabled = product.stock === 'Out of Stock';
+    addBtn.textContent = product.stock === 'Out of Stock' ? 'OUT OF STOCK' : 'ADD TO CART';
+    if (product.stock === 'Out of Stock') {
+      addBtn.style.opacity = '0.5';
+      addBtn.style.cursor = 'not-allowed';
+    } else {
+      addBtn.style.opacity = '';
+      addBtn.style.cursor = '';
+    }
+
+    // Store image for cart
+    addBtn.setAttribute('data-img', product.image || '');
+
+    // Show modal
+    productModal.classList.add('active');
+    productModalOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeProductModal() {
+    productModal.classList.remove('active');
+    productModalOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  function getBenefitsForProduct(product) {
+    var cat = (product.category || '').toLowerCase();
+    var name = (product.name || '').toLowerCase();
+
+    if (name.indexOf('shilajit') !== -1) {
+      return [
+        { title: 'Rich in Fulvic Acid', text: 'Natural minerals & humic substances' },
+        { title: 'Boosts Energy', text: 'Natural adaptogen for vitality' },
+        { title: 'Cognitive Health', text: 'Supports brain function & focus' },
+        { title: 'Athletic Performance', text: 'Enhances stamina & recovery' }
+      ];
+    }
+    if (name.indexOf('tumoro') !== -1 || name.indexOf('thyme') !== -1) {
+      return [
+        { title: 'Rich in Antioxidants', text: 'Natural protection & immunity boost' },
+        { title: 'Respiratory Relief', text: 'Soothes cold, flu & cough symptoms' },
+        { title: 'Aids Digestion', text: 'Improves gut health naturally' },
+        { title: '100% Caffeine Free', text: 'Enjoy any time of day' }
+      ];
+    }
+    if (cat.indexOf('tea') !== -1 || cat.indexOf('herb') !== -1) {
+      return [
+        { title: 'Natural Ingredients', text: 'Pure herbal goodness' },
+        { title: 'Health Benefits', text: 'Supports overall wellness' },
+        { title: 'Caffeine Free', text: 'Perfect for any time of day' },
+        { title: 'Handpicked Quality', text: 'Sourced from organic farms' }
+      ];
+    }
+    if (cat.indexOf('nut') !== -1 || cat.indexOf('seed') !== -1 || cat.indexOf('dried') !== -1) {
+      return [
+        { title: 'Rich in Nutrients', text: 'Packed with vitamins & minerals' },
+        { title: 'Heart Healthy', text: 'Good fats for cardiovascular health' },
+        { title: 'High in Protein', text: 'Natural energy & muscle support' },
+        { title: '100% Organic', text: 'No preservatives or additives' }
+      ];
+    }
+    // Default benefits
+    return [
+      { title: 'Premium Quality', text: 'Handpicked from the best sources' },
+      { title: '100% Organic', text: 'No chemicals or preservatives' },
+      { title: 'Farm Fresh', text: 'Directly sourced from organic farms' },
+      { title: 'Packed With Care', text: 'Sealed fresh for your family' }
+    ];
+  }
+
+  productModalClose.addEventListener('click', closeProductModal);
+  productModalOverlay.addEventListener('click', closeProductModal);
+  modalCloseBtn.addEventListener('click', closeProductModal);
+
+  // Close on Escape (extend existing handler)
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && productModal.classList.contains('active')) {
+      closeProductModal();
+    }
+  });
+
+  // Modal add to cart handler
+  document.getElementById('modalAddToCart').addEventListener('click', function () {
+    if (this.disabled) return;
+    var name = this.getAttribute('data-product');
+    var price = parseFloat(this.getAttribute('data-price'));
+    var img = this.getAttribute('data-img');
+
+    cart.push({ name: name, price: price, image: img });
+    updateCartUI();
+
+    var original = this.textContent;
+    this.textContent = 'ADDED!';
+    this.style.background = '#c48fa2';
+    var self = this;
+    setTimeout(function () {
+      self.textContent = original;
+      self.style.background = '';
+    }, 1200);
+  });
+
+  // Attach product card click handlers
+  function attachProductClickHandlers(container) {
+    container.querySelectorAll('.product-card').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        // Don't open modal if clicking the Add to Cart button
+        if (e.target.closest('.btn-add-cart')) return;
+
+        var productName = '';
+        var nameEl = card.querySelector('.product-name');
+        if (nameEl) productName = nameEl.textContent.trim();
+
+        // Find product in cached data
+        var product = null;
+        for (var i = 0; i < allProducts.length; i++) {
+          if (allProducts[i].name === productName) {
+            product = allProducts[i];
+            break;
+          }
+        }
+
+        if (product) {
+          openProductModal(product);
+        }
       });
     });
   }

@@ -1055,6 +1055,7 @@ button {
 
 .product-card {
   position: relative;
+  cursor: pointer;
 }
 
 .product-img {
@@ -1780,6 +1781,220 @@ button {
   font-weight: 600;
   color: var(--black);
   margin-bottom: 20px;
+}
+
+/* ========== PRODUCT DETAIL MODAL ========== */
+.product-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1200;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.4s ease;
+}
+
+.product-modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.product-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1201;
+  background: var(--white);
+  overflow-y: auto;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.5s ease, opacity 0.4s ease;
+}
+
+.product-modal.active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.product-modal-close {
+  position: fixed;
+  top: 25px;
+  right: 30px;
+  z-index: 1202;
+  width: 48px;
+  height: 48px;
+  background: var(--white);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--black);
+  transition: all var(--transition);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.product-modal.active .product-modal-close,
+.product-modal.active ~ .product-modal-close {
+  opacity: 1;
+  visibility: visible;
+}
+
+.product-modal-close:hover {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+
+.product-modal-inner {
+  display: flex;
+  align-items: center;
+  gap: 80px;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 80px 30px;
+  min-height: 100vh;
+}
+
+.product-modal-image {
+  flex: 0 0 45%;
+  position: relative;
+}
+
+.product-modal-content {
+  flex: 1;
+}
+
+.product-modal-content .special-tag {
+  color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.product-modal-content .special-title {
+  color: var(--black);
+}
+
+.product-modal-content .special-description {
+  color: var(--gray);
+}
+
+.product-modal-content .benefit-text strong {
+  color: var(--black);
+}
+
+.product-modal-content .benefit-text span {
+  color: var(--gray-light);
+}
+
+.product-modal-content .special-price-old {
+  color: var(--gray-light);
+}
+
+.product-modal-content .special-price-current {
+  color: var(--black);
+}
+
+.product-modal-content .rating-count {
+  color: var(--gray-light);
+}
+
+.product-modal-content .special-pricing {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.product-modal-content .btn-outline {
+  color: var(--black);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+.product-modal-content .btn-outline:hover {
+  border-color: var(--black);
+  background: var(--black);
+  color: var(--white);
+}
+
+.product-modal-content .special-img-bg {
+  border-color: var(--primary-dark);
+}
+
+.product-modal-urdu {
+  font-size: 18px;
+  color: var(--primary-dark);
+  font-style: italic;
+  direction: rtl;
+  margin-bottom: 15px;
+  margin-top: -10px;
+}
+
+.product-modal-urdu:empty {
+  display: none;
+}
+
+#modalProductBadge:empty {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .product-modal-inner {
+    flex-direction: column;
+    gap: 50px;
+    padding: 100px 30px 60px;
+  }
+
+  .product-modal-image {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .product-modal-content .special-title {
+    font-size: 36px;
+  }
+
+  .product-modal-content .special-benefits {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .product-modal-inner {
+    padding: 90px 20px 40px;
+    gap: 35px;
+  }
+
+  .product-modal-close {
+    top: 15px;
+    right: 15px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .product-modal-content .special-title {
+    font-size: 30px;
+  }
+
+  .product-modal-content .special-price-current {
+    font-size: 28px;
+  }
+
+  .product-modal-content .special-pricing {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .product-modal-content .special-actions {
+    flex-direction: column;
+  }
+
+  .product-modal-content .special-actions .btn {
+    text-align: center;
+  }
 }
 
 /* ========== BACK TO TOP ========== */
