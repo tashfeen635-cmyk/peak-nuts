@@ -24,8 +24,16 @@
   const backToTop = document.getElementById('backToTop');
   const newsletterForm = document.getElementById('newsletterForm');
 
-  // ---- Cart State ----
+  // ---- Cart State (persisted in localStorage) ----
   let cart = [];
+  try {
+    var saved = localStorage.getItem('peaknuts_cart');
+    if (saved) cart = JSON.parse(saved);
+  } catch (e) {}
+
+  function saveCart() {
+    try { localStorage.setItem('peaknuts_cart', JSON.stringify(cart)); } catch (e) {}
+  }
 
   // ---- Header Scroll Effect ----
   function handleScroll() {
@@ -223,6 +231,7 @@
 
   // ---- Add to Cart ----
   function updateCartUI() {
+    saveCart();
     cartCount.textContent = cart.length;
 
     if (cart.length === 0) {
@@ -903,6 +912,7 @@
     initScrollAnimations();
     handleScroll();
     renderSectionProducts();
+    updateCartUI();
   });
 
   // If DOM is already loaded
@@ -910,6 +920,7 @@
     initScrollAnimations();
     handleScroll();
     renderSectionProducts();
+    updateCartUI();
   }
 
 })();
