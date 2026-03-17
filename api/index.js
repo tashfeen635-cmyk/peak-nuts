@@ -290,10 +290,27 @@ app.post('/api/subscribers', async (req, res) => {
     if (existing) return res.status(409).json({ error: 'Already subscribed' });
     const date = new Date().toISOString().slice(0, 10);
     await Subscriber.create({ email, date });
-    await sendWelcomeEmail(email);
-    res.status(201).json({ message: 'Subscribed successfully' });
+    var emailStatus = 'sent';
+    try {
+      await sendWelcomeEmail(email);
+    } catch (emailErr) {
+      emailStatus = 'failed: ' + emailErr.message;
+    }
+    res.status(201).json({ message: 'Subscribed successfully', email_status: emailStatus });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Test email endpoint - check if email config works
+app.get('/api/test-email', async (req, res) => {
+  try {
+    var user = process.env.EMAIL_USER || 'NOT SET';
+    var pass = process.env.EMAIL_PASS ? 'SET (' + process.env.EMAIL_PASS.length + ' chars)' : 'NOT SET';
+    await transporter.verify();
+    res.json({ status: 'Email config OK', user: user, pass: pass });
+  } catch (err) {
+    res.json({ status: 'Email config FAILED', error: err.message, user: process.env.EMAIL_USER || 'NOT SET', pass: process.env.EMAIL_PASS ? 'SET (' + process.env.EMAIL_PASS.length + ' chars)' : 'NOT SET' });
   }
 });
 

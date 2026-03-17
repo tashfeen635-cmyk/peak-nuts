@@ -320,6 +320,7 @@
       .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
       .then(function (result) {
         if (result.status === 201) {
+          console.log('Subscribe response:', result.data);
           btn.textContent = 'SUBSCRIBED!';
           btn.style.background = '#c48fa2';
           btn.style.borderColor = '#c48fa2';
