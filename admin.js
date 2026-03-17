@@ -158,10 +158,18 @@
 
     closeSidebar();
 
-    if (sectionName === 'dashboard') renderDashboard();
+    if (sectionName === 'dashboard') {
+      Promise.all([loadProducts(), loadOrders(), loadSubscribers(), loadRevenue()]).then(function () {
+        renderDashboard();
+      });
+    }
     if (sectionName === 'products') renderProducts();
-    if (sectionName === 'orders') renderOrders();
-    if (sectionName === 'subscribers') renderSubscribers();
+    if (sectionName === 'orders') {
+      loadOrders().then(function () { renderOrders(); });
+    }
+    if (sectionName === 'subscribers') {
+      loadSubscribers().then(function () { renderSubscribers(); });
+    }
   }
 
   navLinks.forEach(function (link) {
