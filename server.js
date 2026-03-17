@@ -2,6 +2,42 @@ const express = require('express');
 const cors = require('cors');
 const Database = require('better-sqlite3');
 const path = require('path');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
+
+// ---- Email Transporter ----
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+function sendWelcomeEmail(toEmail) {
+  const mailOptions = {
+    from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
+    to: toEmail,
+    subject: 'Welcome to Peak Nuts! 🌰',
+    html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f9f8f5;border-radius:8px">' +
+      '<h1 style="font-family:Georgia,serif;color:#1a1a1a;font-size:28px;margin-bottom:10px">Welcome to Peak Nuts!</h1>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">Thank you for subscribing to our newsletter. You\'ll be the first to know about:</p>' +
+      '<ul style="color:#5d5b5b;font-size:15px;line-height:2">' +
+        '<li>New product launches</li>' +
+        '<li>Exclusive discounts &amp; offers</li>' +
+        '<li>Seasonal recipes &amp; health tips</li>' +
+        '<li>Early access to sales</li>' +
+      '</ul>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">Stay healthy, stay natural!</p>' +
+      '<p style="color:#8B9A46;font-weight:600;font-size:16px;margin-top:20px">— The Peak Nuts Team</p>' +
+      '<hr style="border:none;border-top:1px solid #e0e0e0;margin:25px 0">' +
+      '<p style="color:#999;font-size:12px;text-align:center">Peak Nuts — Premium Organic Nuts &amp; Superfoods</p>' +
+    '</div>'
+  };
+  return transporter.sendMail(mailOptions).catch(function (err) {
+    console.error('Email send error:', err.message);
+  });
+}
 
 const app = express();
 app.use(cors());
@@ -270,6 +306,7 @@ app.post('/api/subscribers', (req, res) => {
     if (existing) return res.status(409).json({ error: 'Already subscribed' });
     const date = new Date().toISOString().slice(0, 10);
     db.prepare('INSERT INTO subscribers (email, date) VALUES (?, ?)').run(email, date);
+    sendWelcomeEmail(email);
     res.status(201).json({ message: 'Subscribed successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
