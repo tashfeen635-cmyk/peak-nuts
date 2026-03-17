@@ -644,8 +644,13 @@
 
     var html = '<div class="order-detail">' +
       '<div class="order-detail-row"><span>Customer</span><span>' + escapeHtml(order.customer) + '</span></div>' +
+      (order.email ? '<div class="order-detail-row"><span>Email</span><span>' + escapeHtml(order.email) + '</span></div>' : '') +
+      (order.phone ? '<div class="order-detail-row"><span>Phone</span><span>' + escapeHtml(order.phone) + '</span></div>' : '') +
+      (order.city ? '<div class="order-detail-row"><span>City</span><span>' + escapeHtml(order.city) + '</span></div>' : '') +
+      (order.address ? '<div class="order-detail-row"><span>Address</span><span>' + escapeHtml(order.address) + '</span></div>' : '') +
       '<div class="order-detail-row"><span>Date</span><span>' + formatDate(order.date) + '</span></div>' +
       '<div class="order-detail-row"><span>Status</span><span><span class="badge ' + statusBadgeClass(order.status) + '">' + order.status + '</span></span></div>' +
+      '<div class="order-detail-row"><span>Payment</span><span>Cash on Delivery</span></div>' +
       '<div class="order-items-list">' +
       '<h4>Items</h4>';
 

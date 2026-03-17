@@ -907,6 +907,151 @@
     });
   }
 
+  // ---- Checkout ----
+  var checkoutSection = document.getElementById('checkoutSection');
+  var checkoutBtn = document.getElementById('checkoutBtn');
+  var checkoutBack = document.getElementById('checkoutBack');
+  var checkoutForm = document.getElementById('checkoutForm');
+  var checkoutItems = document.getElementById('checkoutItems');
+  var checkoutTotalEl = document.getElementById('checkoutTotal');
+  var checkoutSuccess = document.getElementById('checkoutSuccess');
+  var successOrderId = document.getElementById('successOrderId');
+  var backToShopBtn = document.getElementById('backToShopBtn');
+  var placeOrderBtn = document.getElementById('placeOrderBtn');
+
+  function openCheckout() {
+    if (cart.length === 0) return;
+    closeCart();
+    populateCheckoutSummary();
+    checkoutSection.style.display = 'block';
+    checkoutSuccess.style.display = 'none';
+    document.body.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
+  }
+
+  function closeCheckout() {
+    checkoutSection.style.display = 'none';
+    document.body.style.overflow = '';
+    checkoutForm.reset();
+  }
+
+  function populateCheckoutSummary() {
+    var html = '';
+    var total = 0;
+    // Group cart items by name
+    var grouped = {};
+    for (var i = 0; i < cart.length; i++) {
+      var key = cart[i].name;
+      if (!grouped[key]) {
+        grouped[key] = { name: cart[i].name, price: cart[i].price, image: cart[i].image, qty: 0 };
+      }
+      grouped[key].qty++;
+    }
+    for (var k in grouped) {
+      var item = grouped[k];
+      var lineTotal = item.price * item.qty;
+      total += lineTotal;
+      html += '<div class="checkout-item">' +
+        '<img class="checkout-item-img" src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.name) + '" loading="lazy">' +
+        '<div class="checkout-item-info">' +
+          '<div class="checkout-item-name">' + escapeHtml(item.name) + '</div>' +
+          '<div class="checkout-item-qty">Qty: ' + item.qty + ' x Rs.' + item.price.toFixed(2) + '</div>' +
+        '</div>' +
+        '<div class="checkout-item-price">Rs.' + lineTotal.toFixed(2) + '</div>' +
+      '</div>';
+    }
+    checkoutItems.innerHTML = html;
+    checkoutTotalEl.textContent = 'Rs.' + total.toFixed(2);
+  }
+
+  function buildOrderItems() {
+    var grouped = {};
+    for (var i = 0; i < cart.length; i++) {
+      var key = cart[i].name;
+      if (!grouped[key]) {
+        grouped[key] = { name: cart[i].name, price: cart[i].price, qty: 0 };
+      }
+      grouped[key].qty++;
+    }
+    var items = [];
+    for (var k in grouped) {
+      items.push({ name: grouped[k].name, qty: grouped[k].qty, price: grouped[k].price });
+    }
+    return items;
+  }
+
+  checkoutBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    openCheckout();
+  });
+
+  checkoutBack.addEventListener('click', function () {
+    closeCheckout();
+  });
+
+  checkoutForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = document.getElementById('checkoutName').value.trim();
+    var email = document.getElementById('checkoutEmail').value.trim();
+    var phone = document.getElementById('checkoutPhone').value.trim();
+    var city = document.getElementById('checkoutCity').value.trim();
+    var address = document.getElementById('checkoutAddress').value.trim();
+
+    if (!name || !email || !phone || !city || !address) return;
+
+    placeOrderBtn.disabled = true;
+    placeOrderBtn.textContent = 'PLACING ORDER...';
+
+    var orderData = {
+      customer: name,
+      email: email,
+      phone: phone,
+      city: city,
+      address: address,
+      items: buildOrderItems()
+    };
+
+    fetch(API_BASE + '/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData)
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        // Clear cart
+        cart = [];
+        updateCartUI();
+
+        // Show success
+        successOrderId.textContent = 'Order ID: ' + (data.orderId || 'Confirmed');
+        checkoutSuccess.style.display = 'flex';
+
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.textContent = 'PLACE ORDER (Cash on Delivery)';
+      })
+      .catch(function () {
+        placeOrderBtn.disabled = false;
+        placeOrderBtn.textContent = 'PLACE ORDER (Cash on Delivery)';
+        alert('Failed to place order. Please try again.');
+      });
+  });
+
+  backToShopBtn.addEventListener('click', function () {
+    closeCheckout();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Close checkout on Escape
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && checkoutSection.style.display === 'block') {
+      if (checkoutSuccess.style.display === 'flex') {
+        closeCheckout();
+      } else {
+        closeCheckout();
+      }
+    }
+  });
+
   // ---- Initialize ----
   document.addEventListener('DOMContentLoaded', function () {
     initScrollAnimations();

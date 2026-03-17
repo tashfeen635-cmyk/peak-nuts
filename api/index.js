@@ -11,6 +11,52 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+function sendOrderConfirmationEmail(toEmail, order) {
+  var itemsHtml = '';
+  var total = 0;
+  for (var i = 0; i < order.items.length; i++) {
+    var item = order.items[i];
+    var lineTotal = item.qty * item.price;
+    total += lineTotal;
+    itemsHtml += '<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px">' + item.name + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;text-align:center">' + item.qty + '</td>' +
+      '<td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;text-align:right">Rs.' + lineTotal.toFixed(2) + '</td></tr>';
+  }
+
+  const mailOptions = {
+    from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
+    to: toEmail,
+    subject: 'Order Confirmed - ' + order.orderId + ' | Peak Nuts',
+    html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f9f8f5;border-radius:8px">' +
+      '<h1 style="font-family:Georgia,serif;color:#1a1a1a;font-size:28px;margin-bottom:10px">Order Confirmed!</h1>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">Thank you, <strong>' + order.customer + '</strong>! Your order has been placed successfully.</p>' +
+      '<div style="background:#fff;padding:20px;border-radius:6px;margin:20px 0">' +
+        '<p style="margin:0 0 5px;font-size:14px;color:#5d5b5b"><strong>Order ID:</strong> ' + order.orderId + '</p>' +
+        '<p style="margin:0 0 5px;font-size:14px;color:#5d5b5b"><strong>Payment:</strong> Cash on Delivery</p>' +
+        '<p style="margin:0 0 5px;font-size:14px;color:#5d5b5b"><strong>Phone:</strong> ' + order.phone + '</p>' +
+        '<p style="margin:0;font-size:14px;color:#5d5b5b"><strong>Delivery:</strong> ' + order.address + ', ' + order.city + '</p>' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse;margin:20px 0">' +
+        '<thead><tr style="background:#1a1a1a;color:#fff">' +
+          '<th style="padding:10px 12px;text-align:left;font-size:13px">Item</th>' +
+          '<th style="padding:10px 12px;text-align:center;font-size:13px">Qty</th>' +
+          '<th style="padding:10px 12px;text-align:right;font-size:13px">Price</th>' +
+        '</tr></thead>' +
+        '<tbody>' + itemsHtml + '</tbody>' +
+        '<tfoot><tr><td colspan="2" style="padding:12px;font-weight:bold;font-size:15px;border-top:2px solid #1a1a1a">Total</td>' +
+          '<td style="padding:12px;font-weight:bold;font-size:15px;text-align:right;border-top:2px solid #1a1a1a">Rs.' + total.toFixed(2) + '</td></tr></tfoot>' +
+      '</table>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">We will notify you when your order is shipped. Stay healthy, stay natural!</p>' +
+      '<p style="color:#8B9A46;font-weight:600;font-size:16px;margin-top:20px">&mdash; The Peak Nuts Team</p>' +
+      '<hr style="border:none;border-top:1px solid #e0e0e0;margin:25px 0">' +
+      '<p style="color:#999;font-size:12px;text-align:center">Peak Nuts &mdash; Premium Organic Nuts &amp; Superfoods</p>' +
+    '</div>'
+  };
+  return transporter.sendMail(mailOptions).catch(function (err) {
+    console.error('Order confirmation email error:', err.message);
+  });
+}
+
 function sendWelcomeEmail(toEmail) {
   const mailOptions = {
     from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
@@ -57,6 +103,10 @@ const productSchema = new mongoose.Schema({
 const orderSchema = new mongoose.Schema({
   orderId:  { type: String, required: true, unique: true },
   customer: { type: String, required: true },
+  email:    { type: String, default: '' },
+  phone:    { type: String, default: '' },
+  city:     { type: String, default: '' },
+  address:  { type: String, default: '' },
   status:   { type: String, required: true },
   date:     { type: String, required: true },
   items: [{
@@ -245,6 +295,34 @@ app.get('/api/orders', async (req, res) => {
   try {
     await connectDB();
     res.json(await Order.find().sort({ date: -1 }));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/orders', async (req, res) => {
+  try {
+    await connectDB();
+    const { customer, email, phone, city, address, items } = req.body;
+    if (!customer || !email || !phone || !city || !address || !items || !items.length) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // Generate orderId: find max existing PN-XXXX and increment
+    const lastOrder = await Order.findOne().sort({ _id: -1 }).limit(1);
+    let nextNum = 1011;
+    if (lastOrder && lastOrder.orderId) {
+      const match = lastOrder.orderId.match(/PN-(\d+)/);
+      if (match) nextNum = parseInt(match[1]) + 1;
+    }
+    const orderId = 'PN-' + nextNum;
+    const date = new Date().toISOString().slice(0, 10);
+    const status = 'Pending';
+
+    const order = await Order.create({ orderId, customer, email, phone, city, address, status, date, items });
+    sendOrderConfirmationEmail(email, order);
+
+    res.status(201).json(order);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

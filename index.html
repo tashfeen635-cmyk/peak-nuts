@@ -595,9 +595,89 @@
         <span>Total:</span>
         <span id="cartTotal">Rs.0.00</span>
       </div>
-      <a href="#" class="btn btn-primary btn-block">CHECKOUT</a>
+      <button class="btn btn-primary btn-block" id="checkoutBtn">CHECKOUT</button>
     </div>
   </div>
+
+  <!-- ========== CHECKOUT SECTION ========== -->
+  <section class="checkout-section" id="checkoutSection" style="display:none;">
+    <div class="checkout-container">
+      <button class="checkout-back" id="checkoutBack" aria-label="Back to shop">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to Shop
+      </button>
+      <h1 class="checkout-title">Checkout</h1>
+
+      <div class="checkout-grid">
+        <!-- Customer Form -->
+        <div class="checkout-form-wrap">
+          <h2 class="checkout-subtitle">Delivery Details</h2>
+          <form id="checkoutForm">
+            <div class="checkout-form-group">
+              <label for="checkoutName">Full Name *</label>
+              <input type="text" id="checkoutName" required placeholder="e.g. Ahmed Khan">
+            </div>
+            <div class="checkout-form-row">
+              <div class="checkout-form-group">
+                <label for="checkoutEmail">Email *</label>
+                <input type="email" id="checkoutEmail" required placeholder="e.g. ahmed@gmail.com">
+              </div>
+              <div class="checkout-form-group">
+                <label for="checkoutPhone">Phone *</label>
+                <input type="tel" id="checkoutPhone" required placeholder="e.g. 0300-1234567">
+              </div>
+            </div>
+            <div class="checkout-form-group">
+              <label for="checkoutCity">City *</label>
+              <input type="text" id="checkoutCity" required placeholder="e.g. Lahore">
+            </div>
+            <div class="checkout-form-group">
+              <label for="checkoutAddress">Delivery Address *</label>
+              <textarea id="checkoutAddress" required placeholder="e.g. 123 Street, Block A, DHA Phase 5" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block checkout-place-btn" id="placeOrderBtn">PLACE ORDER (Cash on Delivery)</button>
+          </form>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="checkout-summary-wrap">
+          <h2 class="checkout-subtitle">Order Summary</h2>
+          <div class="checkout-items" id="checkoutItems"></div>
+          <div class="checkout-total">
+            <span>Total</span>
+            <span id="checkoutTotal">Rs.0.00</span>
+          </div>
+          <div class="checkout-cod-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+            Cash on Delivery
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Success Confirmation -->
+    <div class="checkout-success" id="checkoutSuccess" style="display:none;">
+      <div class="checkout-success-inner">
+        <div class="checkout-success-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <h2 class="checkout-success-title">Order Placed Successfully!</h2>
+        <p class="checkout-success-text">Thank you for your order. A confirmation email has been sent to your inbox.</p>
+        <div class="checkout-success-order-id" id="successOrderId"></div>
+        <p class="checkout-success-note">Payment: Cash on Delivery</p>
+        <button class="btn btn-primary" id="backToShopBtn">BACK TO SHOP</button>
+      </div>
+    </div>
+  </section>
 
   <!-- ========== PRODUCT DETAIL MODAL ========== -->
   <div class="product-modal-overlay" id="productModalOverlay"></div>
