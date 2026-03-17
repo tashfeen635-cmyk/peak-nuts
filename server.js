@@ -194,11 +194,6 @@ app.post('/api/seed', (req, res) => {
       insertOrders(seedOrders);
     }
 
-    // Clean up old fake seed subscribers
-    const fakeEmails = ['sarah.m@gmail.com','james.parker@outlook.com','emily.chen@yahoo.com','mike.torres@gmail.com','aisha.k@hotmail.com','david.wilson@gmail.com','lisa.r@protonmail.com'];
-    const delSub = db.prepare('DELETE FROM subscribers WHERE email = ?');
-    for (const fe of fakeEmails) delSub.run(fe);
-
     if (subCount === 0) {
       const insertSub = db.prepare('INSERT INTO subscribers (email, date) VALUES (?, ?)');
       const insertSubs = db.transaction((subs) => {

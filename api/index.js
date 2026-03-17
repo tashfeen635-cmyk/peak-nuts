@@ -163,9 +163,6 @@ app.post('/api/seed', async (req, res) => {
     ]);
     if (pc === 0) await Product.insertMany(seedProducts);
     if (oc === 0) await Order.insertMany(seedOrders);
-    // One-time cleanup: clear all old subscribers
-    await Subscriber.deleteMany({});
-
     if (sc === 0) await Subscriber.insertMany(seedSubscribers);
     if (rc === 0) await Revenue.create(seedRevenue);
 
