@@ -302,18 +302,6 @@ app.post('/api/subscribers', async (req, res) => {
   }
 });
 
-// Test email endpoint - check if email config works
-app.get('/api/test-email', async (req, res) => {
-  try {
-    var user = process.env.EMAIL_USER || 'NOT SET';
-    var pass = process.env.EMAIL_PASS ? 'SET (' + process.env.EMAIL_PASS.length + ' chars)' : 'NOT SET';
-    await transporter.verify();
-    res.json({ status: 'Email config OK', user: user, pass: pass });
-  } catch (err) {
-    res.json({ status: 'Email config FAILED', error: err.message, user: process.env.EMAIL_USER || 'NOT SET', pass: process.env.EMAIL_PASS ? 'SET (' + process.env.EMAIL_PASS.length + ' chars)' : 'NOT SET' });
-  }
-});
-
 app.get('/api/revenue', async (req, res) => {
   try {
     await connectDB();
