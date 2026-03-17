@@ -166,6 +166,19 @@
 
     searchResults.innerHTML = html;
 
+    // Attach click handler to open product detail modal
+    searchResults.querySelectorAll('.search-result-item').forEach(function (item, idx) {
+      item.addEventListener('click', function (e) {
+        // Don't open modal if clicking the Add to Cart button
+        if (e.target.closest('.search-result-btn')) return;
+        var product = results[idx];
+        if (product) {
+          closeSearch();
+          openProductModal(product);
+        }
+      });
+    });
+
     // Attach add-to-cart handlers on search result buttons
     searchResults.querySelectorAll('.search-result-btn').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
@@ -615,6 +628,20 @@
 
     inlineSearchResults.innerHTML = html;
     inlineSearchResults.classList.add('has-results');
+
+    // Attach click handler to open product detail modal
+    inlineSearchResults.querySelectorAll('.search-result-item').forEach(function (item, idx) {
+      item.addEventListener('click', function (e) {
+        if (e.target.closest('.search-result-btn')) return;
+        var product = results[idx];
+        if (product) {
+          inlineSearchResults.innerHTML = '';
+          inlineSearchResults.classList.remove('has-results');
+          inlineSearchInput.value = '';
+          openProductModal(product);
+        }
+      });
+    });
 
     // Attach add-to-cart
     inlineSearchResults.querySelectorAll('.search-result-btn').forEach(function (btn) {
