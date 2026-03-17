@@ -283,7 +283,7 @@ app.post('/api/subscribers', async (req, res) => {
     if (existing) return res.status(409).json({ error: 'Already subscribed' });
     const date = new Date().toISOString().slice(0, 10);
     await Subscriber.create({ email, date });
-    sendWelcomeEmail(email);
+    await sendWelcomeEmail(email);
     res.status(201).json({ message: 'Subscribed successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
