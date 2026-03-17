@@ -159,7 +159,7 @@
             (p.stock !== 'In Stock' ? ' &middot; ' + escapeHtml(p.stock) : '') +
           '</div>' +
         '</div>' +
-        '<span class="search-result-price">$' + p.price.toFixed(2) + '</span>' +
+        '<span class="search-result-price">Rs.' + p.price.toFixed(2) + '</span>' +
         '<button class="search-result-btn" data-product="' + name + '" data-price="' + p.price + '" data-img="' + imgSrc + '"' + btnDisabled + '>' + btnText + '</button>' +
       '</div>';
     }
@@ -242,14 +242,14 @@
         '</div>' +
         '<div class="cart-item-info">' +
         '<div class="cart-item-name">' + item.name + '</div>' +
-        '<div class="cart-item-price">$' + item.price.toFixed(2) + '</div>' +
+        '<div class="cart-item-price">Rs.' + item.price.toFixed(2) + '</div>' +
         '<button class="cart-item-remove" data-index="' + index + '">Remove</button>' +
         '</div>' +
         '</div>';
     });
 
     cartBody.innerHTML = html;
-    cartTotal.textContent = '$' + total.toFixed(2);
+    cartTotal.textContent = 'Rs.' + total.toFixed(2);
     cartFooter.style.display = 'block';
 
     // Attach remove handlers
@@ -421,9 +421,9 @@
     // Price
     var priceHtml = '';
     if (p.oldPrice && p.oldPrice > 0) {
-      priceHtml = '<span class="price-old">$' + p.oldPrice.toFixed(2) + '</span>';
+      priceHtml = '<span class="price-old">Rs.' + p.oldPrice.toFixed(2) + '</span>';
     }
-    priceHtml += '<span class="price-current">$' + p.price.toFixed(2) + '</span>';
+    priceHtml += '<span class="price-current">Rs.' + p.price.toFixed(2) + '</span>';
 
     return '<div class="product-card">' +
       '<div class="product-img">' +
@@ -484,7 +484,7 @@
         btn.setAttribute('data-price', dbProduct.price);
         var priceCurrentEl = section.querySelector('.special-price-current');
         if (priceCurrentEl) {
-          priceCurrentEl.textContent = '$' + dbProduct.price.toFixed(2);
+          priceCurrentEl.textContent = 'Rs.' + dbProduct.price.toFixed(2);
         }
         if (dbProduct.image) {
           var imgEl = section.querySelector('.special-img-wrapper img');
@@ -621,7 +621,7 @@
             (p.stock !== 'In Stock' ? ' &middot; ' + escapeHtml(p.stock) : '') +
           '</div>' +
         '</div>' +
-        '<span class="search-result-price">$' + p.price.toFixed(2) + '</span>' +
+        '<span class="search-result-price">Rs.' + p.price.toFixed(2) + '</span>' +
         '<button class="search-result-btn" data-product="' + name + '" data-price="' + p.price + '" data-img="' + imgSrc + '"' + btnDisabled + '>' + btnText + '</button>' +
       '</div>';
     }
@@ -698,13 +698,13 @@
     // Price
     var oldPriceEl = document.getElementById('modalProductOldPrice');
     if (product.oldPrice && product.oldPrice > 0) {
-      oldPriceEl.textContent = '$' + product.oldPrice.toFixed(2);
+      oldPriceEl.textContent = 'Rs.' + product.oldPrice.toFixed(2);
       oldPriceEl.style.display = '';
     } else {
       oldPriceEl.textContent = '';
       oldPriceEl.style.display = 'none';
     }
-    document.getElementById('modalProductPrice').textContent = '$' + product.price.toFixed(2);
+    document.getElementById('modalProductPrice').textContent = 'Rs.' + product.price.toFixed(2);
 
     // Stars
     document.getElementById('modalProductStars').innerHTML = buildStars(product.rating);

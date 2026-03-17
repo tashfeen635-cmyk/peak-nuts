@@ -84,7 +84,7 @@
   }
 
   function formatCurrency(val) {
-    return '$' + val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return 'Rs.' + val.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
 
   function formatDate(dateStr) {
