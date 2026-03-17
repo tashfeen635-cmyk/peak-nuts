@@ -265,6 +265,20 @@ app.get('/api/subscribers', (req, res) => {
   }
 });
 
+app.post('/api/subscribers', (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const existing = db.prepare('SELECT * FROM subscribers WHERE email = ?').get(email);
+    if (existing) return res.status(409).json({ error: 'Already subscribed' });
+    const date = new Date().toISOString().slice(0, 10);
+    db.prepare('INSERT INTO subscribers (email, date) VALUES (?, ?)').run(email, date);
+    res.status(201).json({ message: 'Subscribed successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---- Revenue API ----
 app.get('/api/revenue', (req, res) => {
   try {

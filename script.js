@@ -305,17 +305,52 @@
     var input = this.querySelector('input');
     var btn = this.querySelector('button');
     var originalText = btn.textContent;
+    var email = input.value.trim();
 
-    btn.textContent = 'SUBSCRIBED!';
-    btn.style.background = '#c48fa2';
-    btn.style.borderColor = '#c48fa2';
-    input.value = '';
+    if (!email) return;
 
-    setTimeout(function () {
-      btn.textContent = originalText;
-      btn.style.background = '';
-      btn.style.borderColor = '';
-    }, 2500);
+    btn.textContent = 'SENDING...';
+    btn.disabled = true;
+
+    fetch(API_BASE + '/subscribers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    })
+      .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+      .then(function (result) {
+        if (result.status === 201) {
+          btn.textContent = 'SUBSCRIBED!';
+          btn.style.background = '#c48fa2';
+          btn.style.borderColor = '#c48fa2';
+          input.value = '';
+        } else if (result.status === 409) {
+          btn.textContent = 'ALREADY SUBSCRIBED';
+          btn.style.background = '#e04f3a';
+          btn.style.borderColor = '#e04f3a';
+        } else {
+          btn.textContent = 'FAILED, TRY AGAIN';
+          btn.style.background = '#e04f3a';
+          btn.style.borderColor = '#e04f3a';
+        }
+        btn.disabled = false;
+        setTimeout(function () {
+          btn.textContent = originalText;
+          btn.style.background = '';
+          btn.style.borderColor = '';
+        }, 2500);
+      })
+      .catch(function () {
+        btn.textContent = 'FAILED, TRY AGAIN';
+        btn.style.background = '#e04f3a';
+        btn.style.borderColor = '#e04f3a';
+        btn.disabled = false;
+        setTimeout(function () {
+          btn.textContent = originalText;
+          btn.style.background = '';
+          btn.style.borderColor = '';
+        }, 2500);
+      });
   });
 
   // ---- Scroll Animations ----

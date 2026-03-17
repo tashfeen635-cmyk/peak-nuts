@@ -243,6 +243,21 @@ app.get('/api/subscribers', async (req, res) => {
   }
 });
 
+app.post('/api/subscribers', async (req, res) => {
+  try {
+    await connectDB();
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const existing = await Subscriber.findOne({ email });
+    if (existing) return res.status(409).json({ error: 'Already subscribed' });
+    const date = new Date().toISOString().slice(0, 10);
+    await Subscriber.create({ email, date });
+    res.status(201).json({ message: 'Subscribed successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/revenue', async (req, res) => {
   try {
     await connectDB();
