@@ -1,9 +1,45 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const Database = require('better-sqlite3');
 const path = require('path');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
+
+// ---- Auth Setup ----
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'PeakNuts2026!';
+var activeTokens = {};
+
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function cleanExpiredTokens() {
+  var now = Date.now();
+  var maxAge = 24 * 60 * 60 * 1000;
+  for (var token in activeTokens) {
+    if (now - activeTokens[token].createdAt > maxAge) {
+      delete activeTokens[token];
+    }
+  }
+}
+
+function requireAuth(req, res, next) {
+  var authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  var token = authHeader.slice(7);
+  if (!activeTokens[token]) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+  if (Date.now() - activeTokens[token].createdAt > 24 * 60 * 60 * 1000) {
+    delete activeTokens[token];
+    return res.status(401).json({ error: 'Token expired' });
+  }
+  next();
+}
 
 // ---- Email Transporter ----
 const transporter = nodemailer.createTransport({
@@ -203,8 +239,34 @@ const seedRevenue = {
   values: [1200, 1850, 2100, 1750, 2800, 3400, 2900, 3100, 2650, 0, 0, 0]
 };
 
+// ---- Auth Endpoints ----
+app.post('/api/login', (req, res) => {
+  try {
+    cleanExpiredTokens();
+    var { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    var token = generateToken();
+    activeTokens[token] = { createdAt: Date.now() };
+    res.json({ token: token });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/logout', requireAuth, (req, res) => {
+  var authHeader = req.headers.authorization;
+  var token = authHeader.slice(7);
+  delete activeTokens[token];
+  res.json({ message: 'Logged out successfully' });
+});
+
 // ---- Seed endpoint ----
-app.post('/api/seed', (req, res) => {
+app.post('/api/seed', requireAuth, (req, res) => {
   try {
     const productCount = db.prepare('SELECT COUNT(*) AS cnt FROM products').get().cnt;
     const orderCount = db.prepare('SELECT COUNT(*) AS cnt FROM orders').get().cnt;
@@ -278,7 +340,7 @@ app.get('/api/products', (req, res) => {
   }
 });
 
-app.post('/api/products', (req, res) => {
+app.post('/api/products', requireAuth, (req, res) => {
   try {
     const { name, category, price, stock, image, section, badge, oldPrice, rating, description, urduName } = req.body;
     const result = db.prepare('INSERT INTO products (name, category, price, stock, image, section, badge, oldPrice, rating, description, urduName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(name, category, price, stock, image || '', section || '', badge || '', oldPrice || 0, rating || 5, description || '', urduName || '');
@@ -288,7 +350,7 @@ app.post('/api/products', (req, res) => {
   }
 });
 
-app.put('/api/products/:id', (req, res) => {
+app.put('/api/products/:id', requireAuth, (req, res) => {
   try {
     const { name, category, price, stock, image, section, badge, oldPrice, rating, description, urduName } = req.body;
     const result = db.prepare('UPDATE products SET name=?, category=?, price=?, stock=?, image=?, section=?, badge=?, oldPrice=?, rating=?, description=?, urduName=? WHERE id=?').run(name, category, price, stock, image || '', section || '', badge || '', oldPrice || 0, rating || 5, description || '', urduName || '', req.params.id);
@@ -299,7 +361,7 @@ app.put('/api/products/:id', (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', (req, res) => {
+app.delete('/api/products/:id', requireAuth, (req, res) => {
   try {
     const result = db.prepare('DELETE FROM products WHERE id=?').run(req.params.id);
     if (result.changes === 0) return res.status(404).json({ error: 'Product not found' });
@@ -364,7 +426,7 @@ app.post('/api/orders', (req, res) => {
   }
 });
 
-app.put('/api/orders/:id', (req, res) => {
+app.put('/api/orders/:id', requireAuth, (req, res) => {
   try {
     const { status } = req.body;
     const result = db.prepare('UPDATE orders SET status=? WHERE id=?').run(status, req.params.id);
@@ -376,7 +438,7 @@ app.put('/api/orders/:id', (req, res) => {
 });
 
 // ---- Subscribers API ----
-app.get('/api/subscribers', (req, res) => {
+app.get('/api/subscribers', requireAuth, (req, res) => {
   try {
     const rows = db.prepare('SELECT * FROM subscribers').all();
     res.json(rows);
@@ -385,7 +447,7 @@ app.get('/api/subscribers', (req, res) => {
   }
 });
 
-app.delete('/api/subscribers/:id', (req, res) => {
+app.delete('/api/subscribers/:id', requireAuth, (req, res) => {
   try {
     const result = db.prepare('DELETE FROM subscribers WHERE id = ?').run(req.params.id);
     if (result.changes === 0) return res.status(404).json({ error: 'Subscriber not found' });
@@ -411,7 +473,7 @@ app.post('/api/subscribers', (req, res) => {
 });
 
 // ---- Revenue API ----
-app.get('/api/revenue', (req, res) => {
+app.get('/api/revenue', requireAuth, (req, res) => {
   try {
     const row = db.prepare('SELECT * FROM revenue LIMIT 1').get();
     if (!row) return res.json({ labels: [], values: [] });

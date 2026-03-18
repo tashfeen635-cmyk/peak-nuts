@@ -10,6 +10,49 @@
     ? 'http://localhost:5000/api'
     : '/api';
 
+  // ---- TOKEN MANAGEMENT ----
+  var TOKEN_KEY = 'peaknuts_admin_token';
+
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  function setToken(token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+
+  function removeToken() {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+
+  function authHeaders() {
+    var token = getToken();
+    var headers = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = 'Bearer ' + token;
+    }
+    return headers;
+  }
+
+  function showLoginScreen() {
+    var overlay = document.getElementById('loginOverlay');
+    if (overlay) overlay.classList.remove('hidden');
+  }
+
+  function hideLoginScreen() {
+    var overlay = document.getElementById('loginOverlay');
+    if (overlay) overlay.classList.add('hidden');
+  }
+
+  function handleAuthError(res) {
+    if (res.status === 401) {
+      removeToken();
+      showLoginScreen();
+      return true;
+    }
+    return false;
+  }
+
   // ---- IN-MEMORY CACHE (loaded from API) ----
   var products = [];
   var orders = [];
@@ -19,29 +62,44 @@
 
   // ---- API HELPERS ----
   function apiGet(path) {
-    return fetch(API_BASE + path).then(function (res) { return res.json(); });
+    return fetch(API_BASE + path, {
+      headers: authHeaders()
+    }).then(function (res) {
+      if (handleAuthError(res)) return Promise.reject(new Error('Unauthorized'));
+      return res.json();
+    });
   }
 
   function apiPost(path, body) {
     return fetch(API_BASE + path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(body)
-    }).then(function (res) { return res.json(); });
+    }).then(function (res) {
+      if (handleAuthError(res)) return Promise.reject(new Error('Unauthorized'));
+      return res.json();
+    });
   }
 
   function apiPut(path, body) {
     return fetch(API_BASE + path, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify(body)
-    }).then(function (res) { return res.json(); });
+    }).then(function (res) {
+      if (handleAuthError(res)) return Promise.reject(new Error('Unauthorized'));
+      return res.json();
+    });
   }
 
   function apiDelete(path) {
     return fetch(API_BASE + path, {
-      method: 'DELETE'
-    }).then(function (res) { return res.json(); });
+      method: 'DELETE',
+      headers: authHeaders()
+    }).then(function (res) {
+      if (handleAuthError(res)) return Promise.reject(new Error('Unauthorized'));
+      return res.json();
+    });
   }
 
   // ---- DATA LOADERS ----
@@ -719,9 +777,57 @@
     }
   });
 
+  // ---- LOGIN / LOGOUT ----
+  function handleLogin(e) {
+    e.preventDefault();
+    var username = document.getElementById('loginUsername').value.trim();
+    var password = document.getElementById('loginPassword').value;
+    var errorEl = document.getElementById('loginError');
+    var loginBtn = document.getElementById('loginBtn');
+
+    errorEl.textContent = '';
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Signing in...';
+
+    fetch(API_BASE + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username, password: password })
+    })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+        if (!result.ok) {
+          errorEl.textContent = result.data.error || 'Login failed';
+          return;
+        }
+        setToken(result.data.token);
+        hideLoginScreen();
+        document.getElementById('loginForm').reset();
+        initDashboard();
+      })
+      .catch(function () {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+        errorEl.textContent = 'Cannot connect to server';
+      });
+  }
+
+  function handleLogout(e) {
+    e.preventDefault();
+    apiPost('/logout', {}).catch(function () {}).then(function () {
+      removeToken();
+      showLoginScreen();
+    });
+  }
+
   // ---- INITIAL RENDER ----
-  function init() {
-    // Seed the database (only inserts if empty), then load all data
+  function initDashboard() {
     apiPost('/seed', {})
       .then(function () {
         return Promise.all([loadProducts(), loadOrders(), loadSubscribers(), loadRevenue()]);
@@ -733,9 +839,30 @@
         renderSubscribers();
       })
       .catch(function (err) {
+        if (err && err.message === 'Unauthorized') return;
         console.error('Failed to initialize from API:', err);
         showToast('Failed to connect to server. Make sure the backend is running.', 'error');
       });
+  }
+
+  function init() {
+    // Bind login form
+    var loginForm = document.getElementById('loginForm');
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+
+    // Bind logout link
+    var logoutLink = document.getElementById('logoutLink');
+    if (logoutLink) logoutLink.addEventListener('click', handleLogout);
+
+    // Check for existing token
+    if (!getToken()) {
+      showLoginScreen();
+      return;
+    }
+
+    // Token exists — hide login, load dashboard
+    hideLoginScreen();
+    initDashboard();
   }
 
   if (document.readyState === 'loading') {
