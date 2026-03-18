@@ -15,6 +15,20 @@ function generateToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+// ---- Password Hashing ----
+function hashPassword(password, existingSalt) {
+  var salt = existingSalt || crypto.randomBytes(16).toString('hex');
+  var hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return { hash: hash, salt: salt };
+}
+
+function verifyPassword(password, hash, salt) {
+  var derived = crypto.scryptSync(password, salt, 64);
+  var hashBuffer = Buffer.from(hash, 'hex');
+  if (derived.length !== hashBuffer.length) return false;
+  return crypto.timingSafeEqual(derived, hashBuffer);
+}
+
 function cleanExpiredTokens() {
   var now = Date.now();
   var maxAge = 24 * 60 * 60 * 1000;
@@ -38,6 +52,42 @@ function requireAuth(req, res, next) {
     delete activeTokens[token];
     return res.status(401).json({ error: 'Token expired' });
   }
+  next();
+}
+
+// ---- User Token Management ----
+var activeUserTokens = {};
+
+function cleanExpiredUserTokens() {
+  var now = Date.now();
+  var maxAge = 24 * 60 * 60 * 1000;
+  for (var token in activeUserTokens) {
+    if (now - activeUserTokens[token].createdAt > maxAge) {
+      delete activeUserTokens[token];
+    }
+  }
+}
+
+function requireUser(req, res, next) {
+  var authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  var token = authHeader.slice(7);
+  if (!activeUserTokens[token]) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+  if (Date.now() - activeUserTokens[token].createdAt > 24 * 60 * 60 * 1000) {
+    delete activeUserTokens[token];
+    return res.status(401).json({ error: 'Token expired' });
+  }
+  var userId = activeUserTokens[token].userId;
+  var user = db.prepare('SELECT * FROM users WHERE id=?').get(userId);
+  if (!user) {
+    delete activeUserTokens[token];
+    return res.status(401).json({ error: 'User not found' });
+  }
+  req.user = user;
   next();
 }
 
@@ -173,6 +223,25 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     labels TEXT NOT NULL,
     vals TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    phone TEXT DEFAULT '',
+    city TEXT DEFAULT '',
+    address TEXT DEFAULT '',
+    createdAt TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS user_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT NOT NULL UNIQUE,
+    userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    createdAt INTEGER NOT NULL
   );
 `);
 
@@ -478,6 +547,112 @@ app.get('/api/revenue', requireAuth, (req, res) => {
     const row = db.prepare('SELECT * FROM revenue LIMIT 1').get();
     if (!row) return res.json({ labels: [], values: [] });
     res.json({ labels: JSON.parse(row.labels), values: JSON.parse(row.vals) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- User Account Endpoints ----
+
+app.post('/api/register', (req, res) => {
+  try {
+    cleanExpiredUserTokens();
+    var { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+    var emailLower = email.toLowerCase();
+    var existing = db.prepare('SELECT id FROM users WHERE email=?').get(emailLower);
+    if (existing) {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+    var hashed = hashPassword(password);
+    var result = db.prepare('INSERT INTO users (name, email, password, salt) VALUES (?, ?, ?, ?)').run(name, emailLower, hashed.hash, hashed.salt);
+    var userId = result.lastInsertRowid;
+    var token = generateToken();
+    activeUserTokens[token] = { userId: Number(userId), createdAt: Date.now() };
+    res.status(201).json({
+      token: token,
+      profile: { name: name, email: emailLower, phone: '', city: '', address: '' }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/user/login', (req, res) => {
+  try {
+    cleanExpiredUserTokens();
+    var { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    var user = db.prepare('SELECT * FROM users WHERE email=?').get(email.toLowerCase());
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    if (!verifyPassword(password, user.password, user.salt)) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    var token = generateToken();
+    activeUserTokens[token] = { userId: user.id, createdAt: Date.now() };
+    res.json({
+      token: token,
+      profile: { name: user.name, email: user.email, phone: user.phone || '', city: user.city || '', address: user.address || '' }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/user/logout', requireUser, (req, res) => {
+  var authHeader = req.headers.authorization;
+  var token = authHeader.slice(7);
+  delete activeUserTokens[token];
+  res.json({ message: 'Logged out successfully' });
+});
+
+app.get('/api/user/profile', requireUser, (req, res) => {
+  var user = req.user;
+  res.json({ name: user.name, email: user.email, phone: user.phone || '', city: user.city || '', address: user.address || '' });
+});
+
+app.put('/api/user/profile', requireUser, (req, res) => {
+  try {
+    var { name, phone, city, address } = req.body;
+    var user = req.user;
+    var newName = name !== undefined ? name : user.name;
+    var newPhone = phone !== undefined ? phone : (user.phone || '');
+    var newCity = city !== undefined ? city : (user.city || '');
+    var newAddress = address !== undefined ? address : (user.address || '');
+    db.prepare('UPDATE users SET name=?, phone=?, city=?, address=? WHERE id=?').run(newName, newPhone, newCity, newAddress, user.id);
+    res.json({ name: newName, email: user.email, phone: newPhone, city: newCity, address: newAddress });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/user/orders', requireUser, (req, res) => {
+  try {
+    var rows = db.prepare('SELECT * FROM orders WHERE email=? ORDER BY date DESC').all(req.user.email);
+    var getItems = db.prepare('SELECT name, qty, price FROM order_items WHERE order_id=?');
+    var orders = rows.map(function (o) {
+      return {
+        orderId: o.orderId,
+        customer: o.customer,
+        email: o.email || '',
+        phone: o.phone || '',
+        city: o.city || '',
+        address: o.address || '',
+        status: o.status,
+        date: o.date,
+        items: getItems.all(o.id)
+      };
+    });
+    res.json(orders);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

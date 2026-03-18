@@ -967,6 +967,25 @@
     if (cart.length === 0) return;
     closeCart();
     populateCheckoutSummary();
+
+    // Auto-fill checkout from user profile if logged in
+    try {
+      var profileData = localStorage.getItem('peaknuts_user_profile');
+      if (profileData) {
+        var profile = JSON.parse(profileData);
+        var nameField = document.getElementById('checkoutName');
+        var emailField = document.getElementById('checkoutEmail');
+        var phoneField = document.getElementById('checkoutPhone');
+        var cityField = document.getElementById('checkoutCity');
+        var addressField = document.getElementById('checkoutAddress');
+        if (profile.name && nameField && !nameField.value) nameField.value = profile.name;
+        if (profile.email && emailField && !emailField.value) emailField.value = profile.email;
+        if (profile.phone && phoneField && !phoneField.value) phoneField.value = profile.phone;
+        if (profile.city && cityField && !cityField.value) cityField.value = profile.city;
+        if (profile.address && addressField && !addressField.value) addressField.value = profile.address;
+      }
+    } catch (e) {}
+
     checkoutSection.style.display = 'block';
     checkoutSuccess.style.display = 'none';
     document.body.style.overflow = 'hidden';

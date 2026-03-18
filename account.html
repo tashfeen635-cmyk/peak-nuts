@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contact Us - Peak Nuts</title>
-  <meta name="description" content="Get in touch with Peak Nuts — we'd love to hear from you. Contact us for orders, inquiries, or partnerships.">
+  <title>My Account - Peak Nuts</title>
+  <meta name="description" content="Manage your Peak Nuts account — view orders, update profile, and more.">
   <meta name="theme-color" content="#8B9A46">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,7 +23,7 @@
             <li><a href="index.html">HOME</a></li>
             <li><a href="shop.html">SHOP</a></li>
             <li><a href="about.html">ABOUT</a></li>
-            <li><a href="contact.html" class="active">CONTACT</a></li>
+            <li><a href="contact.html">CONTACT</a></li>
           </ul>
         </nav>
       </div>
@@ -37,7 +37,7 @@
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </button>
-        <a href="account.html" class="header-icon" aria-label="Account">
+        <a href="account.html" class="header-icon active" aria-label="Account">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
@@ -90,154 +90,105 @@
     </div>
   </header>
 
-  <!-- ========== CONTACT HERO ========== -->
-  <section class="contact-hero">
-    <div class="container">
-      <div class="section-header">
-        <h1 class="section-title">Contact Us</h1>
-        <p class="section-subtitle">Have a question or want to get in touch? We'd love to hear from you.</p>
-      </div>
-    </div>
-  </section>
+  <!-- ========== ACCOUNT SECTION ========== -->
+  <section class="account-section">
+    <div class="account-container">
 
-  <!-- ========== CONTACT SECTION ========== -->
-  <section class="contact-section">
-    <div class="container">
-      <div class="contact-grid">
-        <!-- Contact Info -->
-        <div class="contact-info">
-          <h3>Get In Touch</h3>
-
-          <div class="contact-info-item">
-            <div class="contact-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-            </div>
-            <div>
-              <strong>Our Address</strong>
-              <p>42 Orchard Lane, Portland, OR 97201</p>
-            </div>
+      <!-- LOGIN / REGISTER (visible when logged out) -->
+      <div id="accountLogin">
+        <div class="auth-card">
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">LOGIN</button>
+            <button class="auth-tab" data-tab="register">REGISTER</button>
           </div>
 
-          <div class="contact-info-item">
-            <div class="contact-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-            </div>
-            <div>
-              <strong>Phone</strong>
-              <p>+1 (503) 555-0192</p>
-            </div>
-          </div>
-
-          <div class="contact-info-item">
-            <div class="contact-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-            </div>
-            <div>
-              <strong>Email</strong>
-              <p>hello@peaknuts.com</p>
-            </div>
-          </div>
-
-          <div class="contact-info-item">
-            <div class="contact-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-            </div>
-            <div>
-              <strong>Business Hours</strong>
-              <p>Mon - Fri: 9:00 AM - 6:00 PM<br>Sat: 10:00 AM - 4:00 PM<br>Sun: Closed</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Contact Form -->
-        <div class="contact-form">
-          <h3>Send Us A Message</h3>
-          <form id="contactForm">
-            <div class="checkout-form-row">
+          <!-- Login Form -->
+          <div class="auth-form active" id="loginForm">
+            <div class="auth-error" id="loginError"></div>
+            <form id="loginFormEl">
               <div class="checkout-form-group">
-                <label for="contactName">Full Name *</label>
-                <input type="text" id="contactName" required placeholder="Your name">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" required placeholder="e.g. ahmed@gmail.com">
               </div>
               <div class="checkout-form-group">
-                <label for="contactEmail">Email *</label>
-                <input type="email" id="contactEmail" required placeholder="Your email">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword" required placeholder="Enter your password">
               </div>
-            </div>
-            <div class="checkout-form-group">
-              <label for="contactSubject">Subject *</label>
-              <input type="text" id="contactSubject" required placeholder="How can we help?">
-            </div>
-            <div class="checkout-form-group">
-              <label for="contactMessage">Message *</label>
-              <textarea id="contactMessage" required placeholder="Write your message here..." rows="5"></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">SEND MESSAGE</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </section>
+              <button type="submit" class="btn btn-primary btn-block" id="loginBtn">LOGIN</button>
+            </form>
+          </div>
 
-  <!-- ========== FEATURES ========== -->
-  <section class="features">
-    <div class="container">
-      <div class="features-grid">
-        <div class="feature-item">
-          <div class="feature-icon">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="1" y="3" width="15" height="13"></rect>
-              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-              <circle cx="5.5" cy="18.5" r="2.5"></circle>
-              <circle cx="18.5" cy="18.5" r="2.5"></circle>
-            </svg>
+          <!-- Register Form -->
+          <div class="auth-form" id="registerForm">
+            <div class="auth-error" id="registerError"></div>
+            <form id="registerFormEl">
+              <div class="checkout-form-group">
+                <label for="registerName">Full Name</label>
+                <input type="text" id="registerName" required placeholder="e.g. Ahmed Khan">
+              </div>
+              <div class="checkout-form-group">
+                <label for="registerEmail">Email</label>
+                <input type="email" id="registerEmail" required placeholder="e.g. ahmed@gmail.com">
+              </div>
+              <div class="checkout-form-group">
+                <label for="registerPassword">Password</label>
+                <input type="password" id="registerPassword" required placeholder="At least 6 characters" minlength="6">
+              </div>
+              <div class="checkout-form-group">
+                <label for="registerConfirm">Confirm Password</label>
+                <input type="password" id="registerConfirm" required placeholder="Re-enter your password" minlength="6">
+              </div>
+              <button type="submit" class="btn btn-primary btn-block" id="registerBtn">CREATE ACCOUNT</button>
+            </form>
           </div>
-          <h3>Free Shipping</h3>
-          <p>On all orders over Rs.5933</p>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            </svg>
-          </div>
-          <h3>100% Organic</h3>
-          <p>Certified organic products</p>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-              <line x1="1" y1="10" x2="23" y2="10"></line>
-            </svg>
-          </div>
-          <h3>Secure Payment</h3>
-          <p>100% secure checkout</p>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-          </div>
-          <h3>Farm Fresh</h3>
-          <p>Direct from organic farms</p>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ========== NEWSLETTER ========== -->
-  <section class="newsletter">
-    <div class="container">
-      <div class="newsletter-inner">
-        <h2 class="newsletter-title">Join Our Newsletter</h2>
-        <p class="newsletter-text">Subscribe to get seasonal recipes, exclusive discounts, and first access to new arrivals.</p>
-        <form class="newsletter-form" id="newsletterForm">
-          <input type="email" placeholder="Enter your email address" required>
-          <button type="submit" class="btn btn-primary">SUBSCRIBE</button>
-        </form>
+      <!-- DASHBOARD (visible when logged in) -->
+      <div id="accountDashboard" style="display:none;">
+        <h1 class="account-greeting" id="accountGreeting">Hello!</h1>
+
+        <div class="account-nav">
+          <button class="account-nav-btn active" data-panel="profile">PROFILE</button>
+          <button class="account-nav-btn" data-panel="orders">ORDERS</button>
+          <button class="account-nav-btn" data-panel="logout">LOGOUT</button>
+        </div>
+
+        <!-- Profile Panel -->
+        <div class="account-panel active" id="profilePanel">
+          <div class="account-card">
+            <form id="profileFormEl">
+              <div class="checkout-form-group">
+                <label for="profileName">Full Name</label>
+                <input type="text" id="profileName" required placeholder="Your name">
+              </div>
+              <div class="checkout-form-group">
+                <label for="profileEmail">Email</label>
+                <input type="email" id="profileEmail" readonly style="background:#f5f5f5;color:#999;cursor:not-allowed;">
+              </div>
+              <div class="checkout-form-group">
+                <label for="profilePhone">Phone</label>
+                <input type="tel" id="profilePhone" placeholder="e.g. 0300-1234567">
+              </div>
+              <div class="checkout-form-group">
+                <label for="profileCity">City</label>
+                <input type="text" id="profileCity" placeholder="e.g. Lahore">
+              </div>
+              <div class="checkout-form-group">
+                <label for="profileAddress">Address</label>
+                <textarea id="profileAddress" placeholder="e.g. 123 Street, Block A, DHA Phase 5" rows="3"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary account-save-btn" id="profileSaveBtn">SAVE CHANGES</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Orders Panel -->
+        <div class="account-panel" id="ordersPanel">
+          <div id="ordersList"></div>
+        </div>
       </div>
+
     </div>
   </section>
 
@@ -472,5 +423,6 @@
   </button>
 
   <script src="script.js"></script>
+  <script src="account.js"></script>
 </body>
 </html>

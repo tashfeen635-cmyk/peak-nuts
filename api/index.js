@@ -7,6 +7,20 @@ const nodemailer = require('nodemailer');
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'PeakNuts2026!';
 
+// ---- Password Hashing ----
+function hashPassword(password, existingSalt) {
+  var salt = existingSalt || crypto.randomBytes(16).toString('hex');
+  var hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return { hash: hash, salt: salt };
+}
+
+function verifyPassword(password, hash, salt) {
+  var derived = crypto.scryptSync(password, salt, 64);
+  var hashBuffer = Buffer.from(hash, 'hex');
+  if (derived.length !== hashBuffer.length) return false;
+  return crypto.timingSafeEqual(derived, hashBuffer);
+}
+
 // ---- Email Transporter ----
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -142,6 +156,26 @@ const Subscriber = mongoose.models.Subscriber || mongoose.model('Subscriber', su
 const Revenue    = mongoose.models.Revenue    || mongoose.model('Revenue', revenueSchema);
 const Token      = mongoose.models.Token      || mongoose.model('Token', tokenSchema);
 
+const userSchema = new mongoose.Schema({
+  name:      { type: String, required: true },
+  email:     { type: String, required: true, unique: true },
+  password:  { type: String, required: true },
+  salt:      { type: String, required: true },
+  phone:     { type: String, default: '' },
+  city:      { type: String, default: '' },
+  address:   { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const userTokenSchema = new mongoose.Schema({
+  token:     { type: String, required: true, unique: true },
+  userId:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now, expires: 86400 }
+});
+
+const User      = mongoose.models.User      || mongoose.model('User', userSchema);
+const UserToken = mongoose.models.UserToken || mongoose.model('UserToken', userTokenSchema);
+
 // ---- Auth Middleware ----
 async function requireAuth(req, res, next) {
   var authHeader = req.headers.authorization;
@@ -155,6 +189,30 @@ async function requireAuth(req, res, next) {
     if (!found) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
+    next();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+// ---- User Auth Middleware ----
+async function requireUser(req, res, next) {
+  var authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  var tokenStr = authHeader.slice(7);
+  try {
+    await connectDB();
+    var found = await UserToken.findOne({ token: tokenStr });
+    if (!found) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    var user = await User.findById(found.userId);
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    req.user = user;
     next();
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -445,6 +503,110 @@ app.get('/api/revenue', requireAuth, async (req, res) => {
     await connectDB();
     const revenue = await Revenue.findOne();
     res.json(revenue || { labels: [], values: [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- User Account Endpoints ----
+
+app.post('/api/register', async (req, res) => {
+  try {
+    await connectDB();
+    var { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+    var existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      return res.status(409).json({ error: 'An account with this email already exists' });
+    }
+    var hashed = hashPassword(password);
+    var user = await User.create({
+      name: name,
+      email: email.toLowerCase(),
+      password: hashed.hash,
+      salt: hashed.salt
+    });
+    var token = crypto.randomBytes(32).toString('hex');
+    await UserToken.create({ token: token, userId: user._id });
+    res.status(201).json({
+      token: token,
+      profile: { name: user.name, email: user.email, phone: user.phone, city: user.city, address: user.address }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/user/login', async (req, res) => {
+  try {
+    await connectDB();
+    var { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+    var user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    if (!verifyPassword(password, user.password, user.salt)) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    var token = crypto.randomBytes(32).toString('hex');
+    await UserToken.create({ token: token, userId: user._id });
+    res.json({
+      token: token,
+      profile: { name: user.name, email: user.email, phone: user.phone, city: user.city, address: user.address }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/user/logout', requireUser, async (req, res) => {
+  try {
+    var authHeader = req.headers.authorization;
+    var token = authHeader.slice(7);
+    await UserToken.deleteOne({ token: token });
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/user/profile', requireUser, async (req, res) => {
+  try {
+    var user = req.user;
+    res.json({ name: user.name, email: user.email, phone: user.phone, city: user.city, address: user.address });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/user/profile', requireUser, async (req, res) => {
+  try {
+    var { name, phone, city, address } = req.body;
+    var user = req.user;
+    if (name !== undefined) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (city !== undefined) user.city = city;
+    if (address !== undefined) user.address = address;
+    await user.save();
+    res.json({ name: user.name, email: user.email, phone: user.phone, city: user.city, address: user.address });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/user/orders', requireUser, async (req, res) => {
+  try {
+    await connectDB();
+    var userOrders = await Order.find({ email: req.user.email }).sort({ date: -1 });
+    res.json(userOrders);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
