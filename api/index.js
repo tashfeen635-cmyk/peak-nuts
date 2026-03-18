@@ -380,7 +380,7 @@ app.post('/api/orders', async (req, res) => {
     const status = 'Pending';
 
     const order = await Order.create({ orderId, customer, email, phone, city, address, status, date, items });
-    sendOrderConfirmationEmail(email, order);
+    await sendOrderConfirmationEmail(email, order);
 
     res.status(201).json(order);
   } catch (err) {
