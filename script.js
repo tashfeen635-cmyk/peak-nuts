@@ -28,11 +28,30 @@
   let cart = [];
   try {
     var saved = localStorage.getItem('peaknuts_cart');
-    if (saved) cart = JSON.parse(saved);
+    if (saved) {
+      cart = JSON.parse(saved);
+      // Migration: ensure every item has a qty field
+      for (var i = 0; i < cart.length; i++) {
+        if (!cart[i].qty) cart[i].qty = 1;
+      }
+    }
   } catch (e) {}
 
   function saveCart() {
     try { localStorage.setItem('peaknuts_cart', JSON.stringify(cart)); } catch (e) {}
+  }
+
+  // Shared add-to-cart: deduplicates by name, increments qty
+  function addToCart(name, price, image) {
+    for (var i = 0; i < cart.length; i++) {
+      if (cart[i].name === name) {
+        cart[i].qty++;
+        updateCartUI();
+        return;
+      }
+    }
+    cart.push({ name: name, price: price, image: image, qty: 1 });
+    updateCartUI();
   }
 
   // ---- Header Scroll Effect ----
@@ -44,10 +63,12 @@
     }
 
     // Back to top button
-    if (window.scrollY > 500) {
-      backToTop.classList.add('visible');
-    } else {
-      backToTop.classList.remove('visible');
+    if (backToTop) {
+      if (window.scrollY > 500) {
+        backToTop.classList.add('visible');
+      } else {
+        backToTop.classList.remove('visible');
+      }
     }
   }
 
@@ -192,12 +213,7 @@
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         if (this.disabled) return;
-        var prodName = this.getAttribute('data-product');
-        var prodPrice = parseFloat(this.getAttribute('data-price'));
-        var prodImg = this.getAttribute('data-img');
-
-        cart.push({ name: prodName, price: prodPrice, image: prodImg });
-        updateCartUI();
+        addToCart(this.getAttribute('data-product'), parseFloat(this.getAttribute('data-price')), this.getAttribute('data-img'));
 
         // Button feedback
         var original = this.textContent;
@@ -232,7 +248,11 @@
   // ---- Add to Cart ----
   function updateCartUI() {
     saveCart();
-    cartCount.textContent = cart.length;
+
+    // Cart count = sum of all quantities
+    var totalQty = 0;
+    for (var q = 0; q < cart.length; q++) totalQty += cart[q].qty;
+    cartCount.textContent = totalQty;
 
     if (cart.length === 0) {
       cartBody.innerHTML = '<p class="cart-empty">Your cart is empty.</p>';
@@ -244,14 +264,20 @@
     var html = '';
 
     cart.forEach(function (item, index) {
-      total += item.price;
+      var lineTotal = item.price * item.qty;
+      total += lineTotal;
       html += '<div class="cart-item">' +
         '<div class="cart-item-img">' +
-        '<img src="' + item.image + '" alt="' + item.name + '" loading="lazy">' +
+        '<img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.name) + '" loading="lazy">' +
         '</div>' +
         '<div class="cart-item-info">' +
-        '<div class="cart-item-name">' + item.name + '</div>' +
-        '<div class="cart-item-price">Rs.' + item.price.toFixed(2) + '</div>' +
+        '<div class="cart-item-name">' + escapeHtml(item.name) + '</div>' +
+        '<div class="cart-item-qty">' +
+          '<button data-action="dec" data-index="' + index + '">&#8722;</button>' +
+          '<span>' + item.qty + '</span>' +
+          '<button data-action="inc" data-index="' + index + '">&#43;</button>' +
+        '</div>' +
+        '<div class="cart-item-price">Rs.' + lineTotal.toFixed(2) + '</div>' +
         '<button class="cart-item-remove" data-index="' + index + '">Remove</button>' +
         '</div>' +
         '</div>';
@@ -261,8 +287,23 @@
     cartTotal.textContent = 'Rs.' + total.toFixed(2);
     cartFooter.style.display = 'block';
 
+    // Attach qty +/- handlers
+    cartBody.querySelectorAll('.cart-item-qty button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-index'));
+        var action = this.getAttribute('data-action');
+        if (action === 'inc') {
+          cart[idx].qty++;
+        } else {
+          cart[idx].qty--;
+          if (cart[idx].qty <= 0) cart.splice(idx, 1);
+        }
+        updateCartUI();
+      });
+    });
+
     // Attach remove handlers
-    document.querySelectorAll('.cart-item-remove').forEach(function (btn) {
+    cartBody.querySelectorAll('.cart-item-remove').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var idx = parseInt(this.getAttribute('data-index'));
         cart.splice(idx, 1);
@@ -276,19 +317,11 @@
     btn.addEventListener('click', function () {
       var name = this.getAttribute('data-product');
       var price = parseFloat(this.getAttribute('data-price'));
-
-      // Find the product image
       var section = this.closest('.special-product');
       var img = section ? section.querySelector('.special-img-wrapper img') : null;
       var imageSrc = img ? img.getAttribute('src') : '';
 
-      cart.push({
-        name: name,
-        price: price,
-        image: imageSrc
-      });
-
-      updateCartUI();
+      addToCart(name, price, imageSrc);
       openCart();
 
       // Button feedback
@@ -304,64 +337,89 @@
   });
 
   // ---- Back to Top ----
-  backToTop.addEventListener('click', function () {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
+  if (backToTop) {
+    backToTop.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
 
   // ---- Newsletter Form ----
-  newsletterForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var input = this.querySelector('input');
-    var btn = this.querySelector('button');
-    var originalText = btn.textContent;
-    var email = input.value.trim();
+  if (newsletterForm) {
+    newsletterForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = this.querySelector('input');
+      var btn = this.querySelector('button');
+      var originalText = btn.textContent;
+      var email = input.value.trim();
 
-    if (!email) return;
+      if (!email) return;
 
-    btn.textContent = 'SENDING...';
-    btn.disabled = true;
+      btn.textContent = 'SENDING...';
+      btn.disabled = true;
 
-    fetch(API_BASE + '/subscribers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email })
-    })
-      .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
-      .then(function (result) {
-        if (result.status === 201) {
-          console.log('Subscribe response:', result.data);
-          btn.textContent = 'SUBSCRIBED!';
-          btn.style.background = '#c48fa2';
-          btn.style.borderColor = '#c48fa2';
-          input.value = '';
-        } else if (result.status === 409) {
-          btn.textContent = 'ALREADY SUBSCRIBED';
-          btn.style.background = '#e04f3a';
-          btn.style.borderColor = '#e04f3a';
-        } else {
+      fetch(API_BASE + '/subscribers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      })
+        .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+        .then(function (result) {
+          if (result.status === 201) {
+            console.log('Subscribe response:', result.data);
+            btn.textContent = 'SUBSCRIBED!';
+            btn.style.background = '#c48fa2';
+            btn.style.borderColor = '#c48fa2';
+            input.value = '';
+          } else if (result.status === 409) {
+            btn.textContent = 'ALREADY SUBSCRIBED';
+            btn.style.background = '#e04f3a';
+            btn.style.borderColor = '#e04f3a';
+          } else {
+            btn.textContent = 'FAILED, TRY AGAIN';
+            btn.style.background = '#e04f3a';
+            btn.style.borderColor = '#e04f3a';
+          }
+          btn.disabled = false;
+          setTimeout(function () {
+            btn.textContent = originalText;
+            btn.style.background = '';
+            btn.style.borderColor = '';
+          }, 2500);
+        })
+        .catch(function () {
           btn.textContent = 'FAILED, TRY AGAIN';
           btn.style.background = '#e04f3a';
           btn.style.borderColor = '#e04f3a';
-        }
+          btn.disabled = false;
+          setTimeout(function () {
+            btn.textContent = originalText;
+            btn.style.background = '';
+            btn.style.borderColor = '';
+          }, 2500);
+        });
+    });
+  }
+
+  // ---- Contact Form ----
+  var contactForm = document.getElementById('contactForm');
+  if (contactForm) {
+    contactForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var btn = this.querySelector('button[type="submit"]');
+      var originalText = btn.textContent;
+      btn.textContent = 'SENT!';
+      btn.style.background = '#c48fa2';
+      btn.style.borderColor = '#c48fa2';
+      btn.disabled = true;
+      contactForm.reset();
+      setTimeout(function () {
+        btn.textContent = originalText;
+        btn.style.background = '';
+        btn.style.borderColor = '';
         btn.disabled = false;
-        setTimeout(function () {
-          btn.textContent = originalText;
-          btn.style.background = '';
-          btn.style.borderColor = '';
-        }, 2500);
-      })
-      .catch(function () {
-        btn.textContent = 'FAILED, TRY AGAIN';
-        btn.style.background = '#e04f3a';
-        btn.style.borderColor = '#e04f3a';
-        btn.disabled = false;
-        setTimeout(function () {
-          btn.textContent = originalText;
-          btn.style.background = '';
-          btn.style.borderColor = '';
-        }, 2500);
-      });
-  });
+      }, 2500);
+    });
+  }
 
   // ---- Scroll Animations ----
   function initScrollAnimations() {
@@ -491,15 +549,11 @@
     container.querySelectorAll('.btn-add-cart').forEach(function (btn) {
       btn.addEventListener('click', function () {
         if (this.disabled) return;
-        var name = this.getAttribute('data-product');
-        var price = parseFloat(this.getAttribute('data-price'));
-
         var card = this.closest('.product-card');
         var img = card ? card.querySelector('.product-img img') : null;
         var imageSrc = img ? img.getAttribute('src') : '';
 
-        cart.push({ name: name, price: price, image: imageSrc });
-        updateCartUI();
+        addToCart(this.getAttribute('data-product'), parseFloat(this.getAttribute('data-price')), imageSrc);
         openCart();
 
         var original = this.textContent;
@@ -693,12 +747,7 @@
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         if (this.disabled) return;
-        cart.push({
-          name: this.getAttribute('data-product'),
-          price: parseFloat(this.getAttribute('data-price')),
-          image: this.getAttribute('data-img')
-        });
-        updateCartUI();
+        addToCart(this.getAttribute('data-product'), parseFloat(this.getAttribute('data-price')), this.getAttribute('data-img'));
 
         var original = this.textContent;
         this.textContent = 'ADDED!';
@@ -863,12 +912,7 @@
   // Modal add to cart handler
   document.getElementById('modalAddToCart').addEventListener('click', function () {
     if (this.disabled) return;
-    var name = this.getAttribute('data-product');
-    var price = parseFloat(this.getAttribute('data-price'));
-    var img = this.getAttribute('data-img');
-
-    cart.push({ name: name, price: price, image: img });
-    updateCartUI();
+    addToCart(this.getAttribute('data-product'), parseFloat(this.getAttribute('data-price')), this.getAttribute('data-img'));
 
     var original = this.textContent;
     this.textContent = 'ADDED!';
@@ -938,17 +982,8 @@
   function populateCheckoutSummary() {
     var html = '';
     var total = 0;
-    // Group cart items by name
-    var grouped = {};
     for (var i = 0; i < cart.length; i++) {
-      var key = cart[i].name;
-      if (!grouped[key]) {
-        grouped[key] = { name: cart[i].name, price: cart[i].price, image: cart[i].image, qty: 0 };
-      }
-      grouped[key].qty++;
-    }
-    for (var k in grouped) {
-      var item = grouped[k];
+      var item = cart[i];
       var lineTotal = item.price * item.qty;
       total += lineTotal;
       html += '<div class="checkout-item">' +
@@ -965,17 +1000,9 @@
   }
 
   function buildOrderItems() {
-    var grouped = {};
-    for (var i = 0; i < cart.length; i++) {
-      var key = cart[i].name;
-      if (!grouped[key]) {
-        grouped[key] = { name: cart[i].name, price: cart[i].price, qty: 0 };
-      }
-      grouped[key].qty++;
-    }
     var items = [];
-    for (var k in grouped) {
-      items.push({ name: grouped[k].name, qty: grouped[k].qty, price: grouped[k].price });
+    for (var i = 0; i < cart.length; i++) {
+      items.push({ name: cart[i].name, qty: cart[i].qty, price: cart[i].price });
     }
     return items;
   }
@@ -1038,7 +1065,12 @@
 
   backToShopBtn.addEventListener('click', function () {
     closeCheckout();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    var path = window.location.pathname;
+    if (path.indexOf('shop') !== -1 || path === '/' || path.indexOf('index') !== -1) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.location.href = 'shop.html';
+    }
   });
 
   // Close checkout on Escape
@@ -1052,12 +1084,111 @@
     }
   });
 
+  // ---- Learn More Buttons ----
+  function attachLearnMoreHandlers() {
+    document.querySelectorAll('[data-learn-more]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var keyword = this.getAttribute('data-learn-more').toLowerCase();
+        if (allProducts.length === 0) return;
+        var product = null;
+        for (var i = 0; i < allProducts.length; i++) {
+          if (allProducts[i].name.toLowerCase().indexOf(keyword) !== -1) {
+            product = allProducts[i];
+            break;
+          }
+        }
+        if (product) openProductModal(product);
+      });
+    });
+  }
+
+  // ---- Policy Modal ----
+  var policyModal = document.getElementById('policyModal');
+  var policyModalOverlay = document.getElementById('policyModalOverlay');
+  var policyModalClose = document.getElementById('policyModalClose');
+  var policyModalTitle = document.getElementById('policyModalTitle');
+  var policyModalBody = document.getElementById('policyModalBody');
+
+  var policyContent = {
+    shipping: {
+      title: 'Shipping Policy',
+      body: '<h3>Delivery Times</h3>' +
+        '<p>Standard delivery takes 3\u20135 business days within Pakistan. Remote areas may take up to 7 business days.</p>' +
+        '<h3>Free Shipping</h3>' +
+        '<p>We offer free shipping on all orders above Rs.40. Orders below this threshold incur a flat Rs.5 delivery fee.</p>' +
+        '<h3>Order Tracking</h3>' +
+        '<p>Once your order is dispatched, you will receive an email with tracking details. You can track your parcel via the courier\u2019s website.</p>'
+    },
+    returns: {
+      title: 'Return & Refund Policy',
+      body: '<h3>Returns</h3>' +
+        '<p>If you are not satisfied with your purchase, you may return unopened items within 7 days of delivery for a full refund.</p>' +
+        '<h3>Damaged Goods</h3>' +
+        '<p>If your order arrives damaged, please contact us within 48 hours with photographs. We will arrange a replacement or refund at no extra cost.</p>' +
+        '<h3>Refund Process</h3>' +
+        '<p>Refunds are processed within 5\u20137 business days after we receive and inspect the returned items.</p>'
+    },
+    privacy: {
+      title: 'Privacy Policy',
+      body: '<h3>Information We Collect</h3>' +
+        '<p>We collect your name, email, phone number, and delivery address when you place an order or subscribe to our newsletter.</p>' +
+        '<h3>How We Use Your Data</h3>' +
+        '<p>Your information is used solely for order processing, delivery, and sending occasional promotional offers (if subscribed). We never sell your data to third parties.</p>' +
+        '<h3>Data Security</h3>' +
+        '<p>We use industry-standard measures to protect your personal information and ensure secure transactions.</p>'
+    },
+    terms: {
+      title: 'Terms & Conditions',
+      body: '<h3>General</h3>' +
+        '<p>By using the Peak Nuts website and placing orders, you agree to these terms and conditions.</p>' +
+        '<h3>Pricing</h3>' +
+        '<p>All prices are listed in Pakistani Rupees (Rs.) and are subject to change without prior notice. Prices at the time of order placement are final.</p>' +
+        '<h3>Payment</h3>' +
+        '<p>We currently accept Cash on Delivery (COD) only. Full payment is expected upon delivery of your order.</p>' +
+        '<h3>Limitation of Liability</h3>' +
+        '<p>Peak Nuts shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or website.</p>'
+    }
+  };
+
+  function openPolicyModal(policyKey) {
+    var data = policyContent[policyKey];
+    if (!data) return;
+    policyModalTitle.textContent = data.title;
+    policyModalBody.innerHTML = data.body;
+    policyModal.classList.add('active');
+    policyModalOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePolicyModal() {
+    policyModal.classList.remove('active');
+    policyModalOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  policyModalClose.addEventListener('click', closePolicyModal);
+  policyModalOverlay.addEventListener('click', closePolicyModal);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && policyModal.classList.contains('active')) {
+      closePolicyModal();
+    }
+  });
+
+  document.querySelectorAll('[data-policy]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      openPolicyModal(this.getAttribute('data-policy'));
+    });
+  });
+
   // ---- Initialize ----
   document.addEventListener('DOMContentLoaded', function () {
     initScrollAnimations();
     handleScroll();
     renderSectionProducts();
     updateCartUI();
+    attachLearnMoreHandlers();
   });
 
   // If DOM is already loaded
@@ -1066,6 +1197,7 @@
     handleScroll();
     renderSectionProducts();
     updateCartUI();
+    attachLearnMoreHandlers();
   }
 
 })();
