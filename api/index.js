@@ -1,6 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+
+// ---- Auth Setup ----
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'PeakNuts2026!';
 
 // ---- Email Transporter ----
 const transporter = nodemailer.createTransport({
@@ -126,10 +131,35 @@ const revenueSchema = new mongoose.Schema({
   values: [Number]
 });
 
+const tokenSchema = new mongoose.Schema({
+  token:     { type: String, required: true, unique: true },
+  createdAt: { type: Date, default: Date.now, expires: 86400 }
+});
+
 const Product    = mongoose.models.Product    || mongoose.model('Product', productSchema);
 const Order      = mongoose.models.Order      || mongoose.model('Order', orderSchema);
 const Subscriber = mongoose.models.Subscriber || mongoose.model('Subscriber', subscriberSchema);
 const Revenue    = mongoose.models.Revenue    || mongoose.model('Revenue', revenueSchema);
+const Token      = mongoose.models.Token      || mongoose.model('Token', tokenSchema);
+
+// ---- Auth Middleware ----
+async function requireAuth(req, res, next) {
+  var authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  var tokenStr = authHeader.slice(7);
+  try {
+    await connectDB();
+    var found = await Token.findOne({ token: tokenStr });
+    if (!found) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    next();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}
 
 // ---- Seed Data ----
 const seedProducts = [
@@ -202,9 +232,39 @@ app.get('/api/debug', async (req, res) => {
   }
 });
 
+// ---- Auth Endpoints ----
+app.post('/api/login', async (req, res) => {
+  try {
+    await connectDB();
+    var { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+    if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    var token = crypto.randomBytes(32).toString('hex');
+    await Token.create({ token: token });
+    res.json({ token: token });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/logout', requireAuth, async (req, res) => {
+  try {
+    var authHeader = req.headers.authorization;
+    var token = authHeader.slice(7);
+    await Token.deleteOne({ token: token });
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---- API Routes ----
 
-app.post('/api/seed', async (req, res) => {
+app.post('/api/seed', requireAuth, async (req, res) => {
   try {
     await connectDB();
     const [pc, oc, sc, rc] = await Promise.all([
@@ -259,7 +319,7 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', requireAuth, async (req, res) => {
   try {
     await connectDB();
     const product = await Product.create(req.body);
@@ -269,7 +329,7 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', requireAuth, async (req, res) => {
   try {
     await connectDB();
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -280,7 +340,7 @@ app.put('/api/products/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', requireAuth, async (req, res) => {
   try {
     await connectDB();
     const product = await Product.findByIdAndDelete(req.params.id);
@@ -328,7 +388,7 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-app.put('/api/orders/:id', async (req, res) => {
+app.put('/api/orders/:id', requireAuth, async (req, res) => {
   try {
     await connectDB();
     const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -339,7 +399,7 @@ app.put('/api/orders/:id', async (req, res) => {
   }
 });
 
-app.get('/api/subscribers', async (req, res) => {
+app.get('/api/subscribers', requireAuth, async (req, res) => {
   try {
     await connectDB();
     res.json(await Subscriber.find());
@@ -348,7 +408,7 @@ app.get('/api/subscribers', async (req, res) => {
   }
 });
 
-app.delete('/api/subscribers/:id', async (req, res) => {
+app.delete('/api/subscribers/:id', requireAuth, async (req, res) => {
   try {
     await connectDB();
     const sub = await Subscriber.findByIdAndDelete(req.params.id);
@@ -380,7 +440,7 @@ app.post('/api/subscribers', async (req, res) => {
   }
 });
 
-app.get('/api/revenue', async (req, res) => {
+app.get('/api/revenue', requireAuth, async (req, res) => {
   try {
     await connectDB();
     const revenue = await Revenue.findOne();
