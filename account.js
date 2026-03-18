@@ -416,6 +416,26 @@
     ordersPanel.classList.remove('active');
   }
 
+  // ---- PASSWORD TOGGLE ----
+  document.querySelectorAll('.password-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var wrap = this.closest('.password-wrap');
+      var input = wrap.querySelector('input');
+      var eyeOpen = this.querySelector('.eye-open');
+      var eyeClosed = this.querySelector('.eye-closed');
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        eyeOpen.style.display = 'none';
+        eyeClosed.style.display = '';
+      } else {
+        input.type = 'password';
+        eyeOpen.style.display = '';
+        eyeClosed.style.display = 'none';
+      }
+    });
+  });
+
   // ---- INITIALIZE ----
   function init() {
     var token = getToken();
