@@ -381,8 +381,8 @@
           setToken(result.data.token);
           setProfile(result.data.profile);
           loginFormEl.reset();
-          showDashboard(result.data.profile);
-          loadProfile();
+          window.location.href = 'shop.html';
+          return;
         } else {
           showError(loginError, result.data.error || 'Login failed.');
         }
@@ -436,12 +436,8 @@
           setToken(result.data.token);
           setProfile(result.data.profile);
           registerFormEl.reset();
-          showDashboard(result.data.profile);
-          loadProfile();
-          // Show verification banner if needed
-          if (result.data.needsVerification && verificationBanner) {
-            verificationBanner.style.display = '';
-          }
+          window.location.href = 'shop.html';
+          return;
         } else {
           showError(registerError, result.data.error || 'Registration failed.');
         }
