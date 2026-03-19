@@ -76,6 +76,87 @@ function sendOrderConfirmationEmail(toEmail, order) {
   });
 }
 
+function sendPasswordResetEmail(toEmail, resetToken) {
+  var resetLink = (process.env.SITE_URL || 'https://peaknuts.vercel.app') + '/account.html?reset=' + resetToken;
+  const mailOptions = {
+    from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
+    to: toEmail,
+    subject: 'Reset Your Password - Peak Nuts',
+    html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f9f8f5;border-radius:8px">' +
+      '<h1 style="font-family:Georgia,serif;color:#1a1a1a;font-size:28px;margin-bottom:10px">Reset Your Password</h1>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">We received a request to reset your password. Click the button below to create a new password:</p>' +
+      '<div style="text-align:center;margin:30px 0">' +
+        '<a href="' + resetLink + '" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;border-radius:4px;font-size:14px;font-weight:600;letter-spacing:1px">RESET PASSWORD</a>' +
+      '</div>' +
+      '<p style="color:#5d5b5b;font-size:13px;line-height:1.8">This link will expire in 1 hour. If you didn\'t request this, please ignore this email.</p>' +
+      '<p style="color:#8B9A46;font-weight:600;font-size:16px;margin-top:20px">&mdash; The Peak Nuts Team</p>' +
+      '<hr style="border:none;border-top:1px solid #e0e0e0;margin:25px 0">' +
+      '<p style="color:#999;font-size:12px;text-align:center">Peak Nuts &mdash; Premium Organic Nuts &amp; Superfoods</p>' +
+    '</div>'
+  };
+  return transporter.sendMail(mailOptions).catch(function (err) {
+    console.error('Password reset email error:', err.message);
+  });
+}
+
+function sendVerificationEmail(toEmail, verifyToken) {
+  var verifyLink = (process.env.SITE_URL || 'https://peaknuts.vercel.app') + '/account.html?verify=' + verifyToken;
+  const mailOptions = {
+    from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
+    to: toEmail,
+    subject: 'Verify Your Email - Peak Nuts',
+    html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f9f8f5;border-radius:8px">' +
+      '<h1 style="font-family:Georgia,serif;color:#1a1a1a;font-size:28px;margin-bottom:10px">Verify Your Email</h1>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">Welcome to Peak Nuts! Please verify your email address to activate your account:</p>' +
+      '<div style="text-align:center;margin:30px 0">' +
+        '<a href="' + verifyLink + '" style="background:#8B9A46;color:#fff;padding:14px 32px;text-decoration:none;border-radius:4px;font-size:14px;font-weight:600;letter-spacing:1px">VERIFY EMAIL</a>' +
+      '</div>' +
+      '<p style="color:#5d5b5b;font-size:13px;line-height:1.8">This link will expire in 24 hours.</p>' +
+      '<p style="color:#8B9A46;font-weight:600;font-size:16px;margin-top:20px">&mdash; The Peak Nuts Team</p>' +
+      '<hr style="border:none;border-top:1px solid #e0e0e0;margin:25px 0">' +
+      '<p style="color:#999;font-size:12px;text-align:center">Peak Nuts &mdash; Premium Organic Nuts &amp; Superfoods</p>' +
+    '</div>'
+  };
+  return transporter.sendMail(mailOptions).catch(function (err) {
+    console.error('Verification email error:', err.message);
+  });
+}
+
+function sendOrderStatusEmail(toEmail, order, newStatus) {
+  var statusMsg = '';
+  var statusIcon = '';
+  if (newStatus === 'Shipped') {
+    statusMsg = 'Great news! Your order <strong>' + order.orderId + '</strong> has been shipped and is on its way to you.';
+    statusIcon = '&#128666;';
+  } else if (newStatus === 'Delivered') {
+    statusMsg = 'Your order <strong>' + order.orderId + '</strong> has been delivered. We hope you enjoy your purchase!';
+    statusIcon = '&#9989;';
+  } else {
+    return Promise.resolve();
+  }
+  const mailOptions = {
+    from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
+    to: toEmail,
+    subject: 'Order ' + newStatus + ' - ' + order.orderId + ' | Peak Nuts',
+    html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f9f8f5;border-radius:8px">' +
+      '<h1 style="font-family:Georgia,serif;color:#1a1a1a;font-size:28px;margin-bottom:10px">Order ' + newStatus + ' ' + statusIcon + '</h1>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">' + statusMsg + '</p>' +
+      '<div style="background:#fff;padding:20px;border-radius:6px;margin:20px 0">' +
+        '<p style="margin:0 0 5px;font-size:14px;color:#5d5b5b"><strong>Order ID:</strong> ' + order.orderId + '</p>' +
+        '<p style="margin:0 0 5px;font-size:14px;color:#5d5b5b"><strong>Status:</strong> ' + newStatus + '</p>' +
+        '<p style="margin:0;font-size:14px;color:#5d5b5b"><strong>Delivery:</strong> ' + (order.address || '') + ', ' + (order.city || '') + '</p>' +
+      '</div>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">Thank you for shopping with Peak Nuts!</p>' +
+      '<p style="color:#8B9A46;font-weight:600;font-size:16px;margin-top:20px">&mdash; The Peak Nuts Team</p>' +
+      '<hr style="border:none;border-top:1px solid #e0e0e0;margin:25px 0">' +
+      '<p style="color:#999;font-size:12px;text-align:center">Peak Nuts &mdash; Premium Organic Nuts &amp; Superfoods</p>' +
+    '</div>'
+  };
+  return transporter.sendMail(mailOptions).catch(function (err) {
+    console.error('Order status email error:', err.message);
+  });
+}
+
 function sendWelcomeEmail(toEmail) {
   const mailOptions = {
     from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
@@ -164,6 +245,7 @@ const userSchema = new mongoose.Schema({
   phone:     { type: String, default: '' },
   city:      { type: String, default: '' },
   address:   { type: String, default: '' },
+  verified:  { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -173,8 +255,40 @@ const userTokenSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now, expires: 86400 }
 });
 
+const passwordResetTokenSchema = new mongoose.Schema({
+  token: { type: String, required: true, unique: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now, expires: 3600 }
+});
+
+const emailVerificationTokenSchema = new mongoose.Schema({
+  token: { type: String, required: true, unique: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now, expires: 86400 }
+});
+
+const wishlistSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+wishlistSchema.index({ userId: 1, productId: 1 }, { unique: true });
+
+const reviewSchema = new mongoose.Schema({
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now }
+});
+reviewSchema.index({ userId: 1, productId: 1 }, { unique: true });
+
 const User      = mongoose.models.User      || mongoose.model('User', userSchema);
 const UserToken = mongoose.models.UserToken || mongoose.model('UserToken', userTokenSchema);
+const PasswordResetToken = mongoose.models.PasswordResetToken || mongoose.model('PasswordResetToken', passwordResetTokenSchema);
+const EmailVerificationToken = mongoose.models.EmailVerificationToken || mongoose.model('EmailVerificationToken', emailVerificationTokenSchema);
+const Wishlist = mongoose.models.Wishlist || mongoose.model('Wishlist', wishlistSchema);
+const Review = mongoose.models.Review || mongoose.model('Review', reviewSchema);
 
 // ---- Auth Middleware ----
 async function requireAuth(req, res, next) {
@@ -449,8 +563,13 @@ app.post('/api/orders', async (req, res) => {
 app.put('/api/orders/:id', requireAuth, async (req, res) => {
   try {
     await connectDB();
+    const oldOrder = await Order.findById(req.params.id);
+    if (!oldOrder) return res.status(404).json({ error: 'Order not found' });
     const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!order) return res.status(404).json({ error: 'Order not found' });
+    // Send status notification email
+    if (req.body.status && order.email && (req.body.status === 'Shipped' || req.body.status === 'Delivered')) {
+      sendOrderStatusEmail(order.email, order, req.body.status);
+    }
     res.json(order);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -529,13 +648,21 @@ app.post('/api/register', async (req, res) => {
       name: name,
       email: email.toLowerCase(),
       password: hashed.hash,
-      salt: hashed.salt
+      salt: hashed.salt,
+      verified: false
     });
+
+    // Send verification email
+    var verifyToken = crypto.randomBytes(32).toString('hex');
+    await EmailVerificationToken.create({ token: verifyToken, userId: user._id });
+    sendVerificationEmail(user.email, verifyToken);
+
     var token = crypto.randomBytes(32).toString('hex');
     await UserToken.create({ token: token, userId: user._id });
     res.status(201).json({
       token: token,
-      profile: { name: user.name, email: user.email, phone: user.phone, city: user.city, address: user.address }
+      profile: { name: user.name, email: user.email, phone: user.phone, city: user.city, address: user.address },
+      needsVerification: true
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -607,6 +734,286 @@ app.get('/api/user/orders', requireUser, async (req, res) => {
     await connectDB();
     var userOrders = await Order.find({ email: req.user.email }).sort({ date: -1 });
     res.json(userOrders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Forgot Password ----
+app.post('/api/forgot-password', async (req, res) => {
+  try {
+    await connectDB();
+    var { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+    var user = await User.findOne({ email: email.toLowerCase() });
+    // Always return success to prevent email enumeration
+    if (!user) return res.json({ message: 'If an account exists, a reset link has been sent.' });
+    // Delete old reset tokens for this user
+    await PasswordResetToken.deleteMany({ userId: user._id });
+    var token = crypto.randomBytes(32).toString('hex');
+    await PasswordResetToken.create({ token: token, userId: user._id });
+    sendPasswordResetEmail(user.email, token);
+    res.json({ message: 'If an account exists, a reset link has been sent.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/reset-password', async (req, res) => {
+  try {
+    await connectDB();
+    var { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Token and password are required' });
+    if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    var resetToken = await PasswordResetToken.findOne({ token: token });
+    if (!resetToken) return res.status(400).json({ error: 'Invalid or expired reset link' });
+    // Check expiry (1 hour)
+    if (Date.now() - resetToken.createdAt.getTime() > 60 * 60 * 1000) {
+      await PasswordResetToken.deleteOne({ token: token });
+      return res.status(400).json({ error: 'Reset link has expired. Please request a new one.' });
+    }
+    var hashed = hashPassword(password);
+    await User.findByIdAndUpdate(resetToken.userId, { password: hashed.hash, salt: hashed.salt });
+    await PasswordResetToken.deleteMany({ userId: resetToken.userId });
+    res.json({ message: 'Password reset successfully. You can now login.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Email Verification ----
+app.get('/api/verify-email', async (req, res) => {
+  try {
+    await connectDB();
+    var token = req.query.token;
+    if (!token) return res.status(400).json({ error: 'Token is required' });
+    var verifyToken = await EmailVerificationToken.findOne({ token: token });
+    if (!verifyToken) return res.status(400).json({ error: 'Invalid or expired verification link' });
+    // Check expiry (24 hours)
+    if (Date.now() - verifyToken.createdAt.getTime() > 24 * 60 * 60 * 1000) {
+      await EmailVerificationToken.deleteOne({ token: token });
+      return res.status(400).json({ error: 'Verification link has expired. Please request a new one.' });
+    }
+    await User.findByIdAndUpdate(verifyToken.userId, { verified: true });
+    await EmailVerificationToken.deleteMany({ userId: verifyToken.userId });
+    res.json({ message: 'Email verified successfully!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/resend-verification', requireUser, async (req, res) => {
+  try {
+    await connectDB();
+    var user = req.user;
+    if (user.verified) return res.json({ message: 'Email already verified' });
+    await EmailVerificationToken.deleteMany({ userId: user._id });
+    var token = crypto.randomBytes(32).toString('hex');
+    await EmailVerificationToken.create({ token: token, userId: user._id });
+    sendVerificationEmail(user.email, token);
+    res.json({ message: 'Verification email sent' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Wishlist Endpoints ----
+app.get('/api/user/wishlist', requireUser, async (req, res) => {
+  try {
+    await connectDB();
+    var items = await Wishlist.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    // Populate product details
+    var result = [];
+    for (var i = 0; i < items.length; i++) {
+      var product = await Product.findById(items[i].productId);
+      if (product) {
+        result.push({
+          _id: items[i]._id,
+          productId: items[i].productId,
+          createdAt: items[i].createdAt,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          category: product.category,
+          stock: product.stock,
+          badge: product.badge,
+          oldPrice: product.oldPrice,
+          rating: product.rating,
+          description: product.description,
+          urduName: product.urduName,
+          section: product.section
+        });
+      }
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/user/wishlist', requireUser, async (req, res) => {
+  try {
+    await connectDB();
+    var { productId } = req.body;
+    if (!productId) return res.status(400).json({ error: 'Product ID is required' });
+    var existing = await Wishlist.findOne({ userId: req.user._id, productId: productId });
+    if (existing) return res.status(409).json({ error: 'Already in wishlist' });
+    await Wishlist.create({ userId: req.user._id, productId: productId });
+    res.status(201).json({ message: 'Added to wishlist' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/user/wishlist/:productId', requireUser, async (req, res) => {
+  try {
+    await connectDB();
+    var result = await Wishlist.deleteOne({ userId: req.user._id, productId: req.params.productId });
+    if (result.deletedCount === 0) return res.status(404).json({ error: 'Not in wishlist' });
+    res.json({ message: 'Removed from wishlist' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Reviews Endpoints ----
+app.get('/api/reviews/:productId', async (req, res) => {
+  try {
+    await connectDB();
+    var reviews = await Review.find({ productId: req.params.productId }).sort({ createdAt: -1 });
+    // Populate user names
+    var result = [];
+    for (var i = 0; i < reviews.length; i++) {
+      var user = await User.findById(reviews[i].userId);
+      result.push({
+        _id: reviews[i]._id,
+        rating: reviews[i].rating,
+        comment: reviews[i].comment,
+        createdAt: reviews[i].createdAt,
+        userName: user ? user.name : 'Unknown'
+      });
+    }
+    // Calculate average
+    var totalRating = 0;
+    for (var j = 0; j < reviews.length; j++) {
+      totalRating += reviews[j].rating;
+    }
+    var avgRating = reviews.length > 0 ? Math.round((totalRating / reviews.length) * 10) / 10 : null;
+    res.json({ reviews: result, avgRating: avgRating, count: reviews.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/reviews/:productId', requireUser, async (req, res) => {
+  try {
+    await connectDB();
+    var { rating, comment } = req.body;
+    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    var existing = await Review.findOne({ userId: req.user._id, productId: req.params.productId });
+    if (existing) {
+      existing.rating = rating;
+      existing.comment = comment || '';
+      existing.createdAt = new Date();
+      await existing.save();
+      res.json({ message: 'Review updated' });
+    } else {
+      await Review.create({ productId: req.params.productId, userId: req.user._id, rating: rating, comment: comment || '' });
+      res.status(201).json({ message: 'Review added' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Admin: Users Management ----
+app.get('/api/admin/users', requireAuth, async (req, res) => {
+  try {
+    await connectDB();
+    var users = await User.find({}, 'name email phone city address verified createdAt').sort({ createdAt: -1 });
+    var result = [];
+    for (var i = 0; i < users.length; i++) {
+      var u = users[i];
+      var orderCount = await Order.countDocuments({ email: u.email });
+      result.push({
+        _id: u._id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        city: u.city,
+        address: u.address,
+        verified: u.verified,
+        createdAt: u.createdAt,
+        orderCount: orderCount
+      });
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Admin: Sales Analytics ----
+app.get('/api/admin/analytics', requireAuth, async (req, res) => {
+  try {
+    await connectDB();
+    var allOrders = await Order.find().sort({ date: -1 });
+
+    // Calculate daily sales for last 30 days
+    var dailySales = {};
+    var weeklySales = {};
+    var monthlySales = {};
+    var topProducts = {};
+    var totalRevenue = 0;
+    var statusCounts = { Pending: 0, Shipped: 0, Delivered: 0 };
+
+    for (var i = 0; i < allOrders.length; i++) {
+      var o = allOrders[i];
+      var orderTotal = 0;
+      for (var j = 0; j < o.items.length; j++) {
+        var lineTotal = o.items[j].qty * o.items[j].price;
+        orderTotal += lineTotal;
+        // Top products
+        var pName = o.items[j].name;
+        if (!topProducts[pName]) topProducts[pName] = { name: pName, qty: 0, revenue: 0 };
+        topProducts[pName].qty += o.items[j].qty;
+        topProducts[pName].revenue += lineTotal;
+      }
+      totalRevenue += orderTotal;
+      statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
+
+      // Daily
+      dailySales[o.date] = (dailySales[o.date] || 0) + orderTotal;
+
+      // Weekly (week start = Sunday)
+      var d = new Date(o.date + 'T00:00:00');
+      var weekStart = new Date(d);
+      weekStart.setDate(d.getDate() - d.getDay());
+      var weekKey = weekStart.toISOString().slice(0, 10);
+      weeklySales[weekKey] = (weeklySales[weekKey] || 0) + orderTotal;
+
+      // Monthly
+      var monthKey = o.date.slice(0, 7);
+      monthlySales[monthKey] = (monthlySales[monthKey] || 0) + orderTotal;
+    }
+
+    // Sort top products by revenue
+    var topList = Object.values(topProducts).sort(function (a, b) { return b.revenue - a.revenue; }).slice(0, 10);
+
+    // Convert to arrays sorted by date
+    var dailyArr = Object.keys(dailySales).sort().slice(-30).map(function (k) { return { date: k, revenue: dailySales[k] }; });
+    var weeklyArr = Object.keys(weeklySales).sort().slice(-12).map(function (k) { return { week: k, revenue: weeklySales[k] }; });
+    var monthlyArr = Object.keys(monthlySales).sort().slice(-12).map(function (k) { return { month: k, revenue: monthlySales[k] }; });
+
+    res.json({
+      totalRevenue: totalRevenue,
+      totalOrders: allOrders.length,
+      statusCounts: statusCounts,
+      dailySales: dailyArr,
+      weeklySales: weeklyArr,
+      monthlySales: monthlyArr,
+      topProducts: topList
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -228,6 +228,12 @@
     if (sectionName === 'subscribers') {
       loadSubscribers().then(function () { renderSubscribers(); });
     }
+    if (sectionName === 'users') {
+      loadUsers();
+    }
+    if (sectionName === 'analytics') {
+      loadAnalytics();
+    }
   }
 
   navLinks.forEach(function (link) {
@@ -618,15 +624,70 @@
       });
   });
 
-  // ---- ORDERS RENDERING ----
+  // ---- ORDERS RENDERING (with pagination) ----
+  var ordersCurrentPage = 1;
+  var ordersPerPage = 10;
+
+  function renderOrdersPaginationControls(container, currentPage, totalPages, onPageChange) {
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+    var html = '<div style="display:flex;justify-content:center;align-items:center;gap:6px;padding:20px 0;flex-wrap:wrap;">';
+    var btnBase = 'padding:8px 14px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;transition:all 0.2s;';
+    var btnActive = 'padding:8px 14px;border:1px solid #1a1a1a;border-radius:6px;background:#1a1a1a;color:#fff;cursor:default;font-size:13px;font-family:inherit;font-weight:600;';
+    var btnDisabled = 'padding:8px 14px;border:1px solid #eee;border-radius:6px;background:#f5f5f5;color:#ccc;cursor:not-allowed;font-size:13px;font-family:inherit;';
+    if (currentPage > 1) {
+      html += '<button class="pg-btn" data-page="' + (currentPage - 1) + '" style="' + btnBase + '">&laquo; Prev</button>';
+    } else {
+      html += '<button disabled style="' + btnDisabled + '">&laquo; Prev</button>';
+    }
+    var startP = Math.max(1, currentPage - 2);
+    var endP = Math.min(totalPages, currentPage + 2);
+    if (startP > 1) {
+      html += '<button class="pg-btn" data-page="1" style="' + btnBase + '">1</button>';
+      if (startP > 2) html += '<span style="padding:0 4px;color:#999;">...</span>';
+    }
+    for (var i = startP; i <= endP; i++) {
+      if (i === currentPage) {
+        html += '<button style="' + btnActive + '">' + i + '</button>';
+      } else {
+        html += '<button class="pg-btn" data-page="' + i + '" style="' + btnBase + '">' + i + '</button>';
+      }
+    }
+    if (endP < totalPages) {
+      if (endP < totalPages - 1) html += '<span style="padding:0 4px;color:#999;">...</span>';
+      html += '<button class="pg-btn" data-page="' + totalPages + '" style="' + btnBase + '">' + totalPages + '</button>';
+    }
+    if (currentPage < totalPages) {
+      html += '<button class="pg-btn" data-page="' + (currentPage + 1) + '" style="' + btnBase + '">Next &raquo;</button>';
+    } else {
+      html += '<button disabled style="' + btnDisabled + '">Next &raquo;</button>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+    container.querySelectorAll('.pg-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        onPageChange(parseInt(this.getAttribute('data-page')));
+      });
+    });
+  }
+
   function renderOrders() {
     var tbody = document.getElementById('ordersTableBody');
-    var html = '';
+    var paginationContainer = document.getElementById('ordersPagination');
     var sorted = orders.slice().sort(function (a, b) {
       return new Date(b.date) - new Date(a.date);
     });
-    for (var i = 0; i < sorted.length; i++) {
-      var o = sorted[i];
+
+    var totalPages = Math.ceil(sorted.length / ordersPerPage);
+    if (ordersCurrentPage > totalPages) ordersCurrentPage = totalPages;
+    if (ordersCurrentPage < 1) ordersCurrentPage = 1;
+
+    var start = (ordersCurrentPage - 1) * ordersPerPage;
+    var end = start + ordersPerPage;
+    var pageOrders = sorted.slice(start, end);
+
+    var html = '';
+    for (var i = 0; i < pageOrders.length; i++) {
+      var o = pageOrders[i];
       var itemCount = 0;
       for (var j = 0; j < o.items.length; j++) {
         itemCount += o.items[j].qty;
@@ -653,6 +714,14 @@
         '</tr>';
     }
     tbody.innerHTML = html;
+
+    // Render pagination controls
+    if (paginationContainer) {
+      renderOrdersPaginationControls(paginationContainer, ordersCurrentPage, totalPages, function (page) {
+        ordersCurrentPage = page;
+        renderOrders();
+      });
+    }
 
     // Status change handlers
     tbody.querySelectorAll('.status-select').forEach(function (sel) {
@@ -767,6 +836,149 @@
       });
     });
   }
+
+  // ---- USERS MANAGEMENT ----
+  var allUsers = [];
+
+  function loadUsers() {
+    apiGet('/admin/users').then(function (data) {
+      allUsers = data;
+      renderUsers(data);
+    }).catch(function () {});
+  }
+
+  function renderUsers(usersData) {
+    var tbody = document.getElementById('usersTableBody');
+    if (!tbody) return;
+    var html = '';
+    for (var i = 0; i < usersData.length; i++) {
+      var u = usersData[i];
+      var joinDate = u.createdAt ? formatDate(u.createdAt.slice(0, 10)) : '—';
+      var verifiedBadge = u.verified ? '<span class="badge badge-in-stock">Yes</span>' : '<span class="badge badge-pending">No</span>';
+      html += '<tr>' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td><strong>' + escapeHtml(u.name) + '</strong></td>' +
+        '<td>' + escapeHtml(u.email) + '</td>' +
+        '<td>' + escapeHtml(u.phone || '—') + '</td>' +
+        '<td>' + escapeHtml(u.city || '—') + '</td>' +
+        '<td>' + u.orderCount + '</td>' +
+        '<td>' + verifiedBadge + '</td>' +
+        '<td>' + joinDate + '</td>' +
+        '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:#999;padding:20px;">No registered users yet.</td></tr>';
+  }
+
+  // User search
+  var userSearchInput = document.getElementById('userSearchInput');
+  if (userSearchInput) {
+    userSearchInput.addEventListener('input', function () {
+      var query = this.value.trim().toLowerCase();
+      if (!query) { renderUsers(allUsers); return; }
+      var filtered = allUsers.filter(function (u) {
+        return (u.name + ' ' + u.email).toLowerCase().indexOf(query) !== -1;
+      });
+      renderUsers(filtered);
+    });
+  }
+
+  // ---- SALES ANALYTICS ----
+  var analyticsData = null;
+  var analyticsPeriod = 'daily';
+
+  function loadAnalytics() {
+    apiGet('/admin/analytics').then(function (data) {
+      analyticsData = data;
+      renderAnalytics();
+    }).catch(function () {});
+  }
+
+  function renderAnalytics() {
+    if (!analyticsData) return;
+
+    document.getElementById('analyticsRevenue').textContent = formatCurrency(analyticsData.totalRevenue);
+    document.getElementById('analyticsTotalOrders').textContent = analyticsData.totalOrders;
+    document.getElementById('analyticsPending').textContent = analyticsData.statusCounts.Pending || 0;
+    document.getElementById('analyticsDelivered').textContent = analyticsData.statusCounts.Delivered || 0;
+
+    renderAnalyticsChart();
+    renderTopProducts();
+  }
+
+  function renderAnalyticsChart() {
+    var container = document.getElementById('analyticsChart');
+    var titleEl = document.getElementById('analyticsChartTitle');
+    if (!container || !analyticsData) return;
+
+    var dataSet = [];
+    if (analyticsPeriod === 'daily') {
+      dataSet = analyticsData.dailySales;
+      titleEl.textContent = 'Daily Sales (Last 30 Days)';
+    } else if (analyticsPeriod === 'weekly') {
+      dataSet = analyticsData.weeklySales;
+      titleEl.textContent = 'Weekly Sales (Last 12 Weeks)';
+    } else {
+      dataSet = analyticsData.monthlySales;
+      titleEl.textContent = 'Monthly Sales (Last 12 Months)';
+    }
+
+    if (!dataSet || dataSet.length === 0) {
+      container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">No sales data available.</p>';
+      return;
+    }
+
+    var maxVal = 0;
+    for (var i = 0; i < dataSet.length; i++) {
+      var val = dataSet[i].revenue;
+      if (val > maxVal) maxVal = val;
+    }
+    if (maxVal === 0) maxVal = 1;
+
+    var html = '';
+    for (var i = 0; i < dataSet.length; i++) {
+      var item = dataSet[i];
+      var heightPct = (item.revenue / maxVal) * 100;
+      var label = item.date || item.week || item.month || '';
+      // Shorten label for daily view
+      if (analyticsPeriod === 'daily') label = label.slice(5);
+      else if (analyticsPeriod === 'weekly') label = 'W' + label.slice(5);
+      html += '<div class="chart-bar-wrap">' +
+        '<div class="chart-bar" style="height:' + heightPct + '%">' +
+        '<span class="chart-bar-value">' + formatCurrency(item.revenue) + '</span>' +
+        '</div>' +
+        '<span class="chart-label">' + label + '</span>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function renderTopProducts() {
+    var tbody = document.getElementById('topProductsBody');
+    if (!tbody || !analyticsData) return;
+    var html = '';
+    var topList = analyticsData.topProducts || [];
+    for (var i = 0; i < topList.length; i++) {
+      var p = topList[i];
+      html += '<tr>' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td><strong>' + escapeHtml(p.name) + '</strong></td>' +
+        '<td>' + p.qty + '</td>' +
+        '<td>' + formatCurrency(p.revenue) + '</td>' +
+        '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="4" style="text-align:center;color:#999;padding:20px;">No data yet.</td></tr>';
+  }
+
+  // Analytics period tabs
+  var analyticsTabs = document.querySelectorAll('#analyticsPeriodTabs .filter-tab');
+  analyticsTabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      analyticsTabs.forEach(function (t) { t.classList.remove('active'); });
+      this.classList.add('active');
+      analyticsPeriod = this.getAttribute('data-period');
+      renderAnalyticsChart();
+    });
+  });
 
   // ---- KEYBOARD SHORTCUTS ----
   document.addEventListener('keydown', function (e) {

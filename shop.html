@@ -7,6 +7,9 @@
   <meta name="description" content="Shop Peak Nuts — browse our full range of premium organic nuts, seeds, herbs & teas.">
   <meta name="theme-color" content="#8B9A46">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -102,7 +105,7 @@
     </div>
   </section>
 
-  <!-- ========== INLINE SEARCH BAR ========== -->
+  <!-- ========== INLINE SEARCH BAR + FILTERS ========== -->
   <section class="inline-search" id="inlineSearch">
     <div class="container">
       <div class="inline-search-inner">
@@ -113,6 +116,51 @@
         <input type="text" id="inlineSearchInput" class="inline-search-input" placeholder="Search for nuts, herbs, teas, supplements...">
       </div>
       <div class="inline-search-results" id="inlineSearchResults"></div>
+
+      <!-- Filter & Sort Controls -->
+      <div id="shopFilters" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;align-items:center;">
+        <select id="filterCategory" style="padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fff;cursor:pointer;min-width:140px;">
+          <option value="">All Categories</option>
+          <option value="Nuts">Nuts</option>
+          <option value="Herbs & Supplements">Herbs & Supplements</option>
+          <option value="Teas">Teas</option>
+          <option value="Mixes & Butters">Mixes & Butters</option>
+          <option value="Spices">Spices</option>
+        </select>
+        <select id="filterPrice" style="padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fff;cursor:pointer;min-width:140px;">
+          <option value="">All Prices</option>
+          <option value="0-15">Under Rs.15</option>
+          <option value="15-25">Rs.15 - Rs.25</option>
+          <option value="25-50">Rs.25 - Rs.50</option>
+          <option value="50-100">Rs.50+</option>
+        </select>
+        <select id="filterRating" style="padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fff;cursor:pointer;min-width:120px;">
+          <option value="">All Ratings</option>
+          <option value="5">5 Stars</option>
+          <option value="4">4+ Stars</option>
+          <option value="3">3+ Stars</option>
+        </select>
+        <select id="sortBy" style="padding:8px 14px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fff;cursor:pointer;min-width:150px;">
+          <option value="">Sort By</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="price-high">Price: High to Low</option>
+          <option value="rating">Highest Rated</option>
+          <option value="name">Name: A-Z</option>
+        </select>
+        <span id="filterCount" style="font-size:13px;color:#666;margin-left:auto;"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PAGINATED PRODUCTS GRID (Shop Page) ========== -->
+  <section class="products-section" id="shopPaginatedSection" style="display:none;">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">All Products</h2>
+        <p class="section-subtitle">Browse our complete collection of premium organic products</p>
+      </div>
+      <div class="products-grid" id="shopPaginatedGrid"></div>
+      <div id="shopPagination"></div>
     </div>
   </section>
 
@@ -608,5 +656,6 @@
   </button>
 
   <script src="script.js"></script>
+  <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){});}</script>
 </body>
 </html>

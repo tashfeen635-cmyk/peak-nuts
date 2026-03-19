@@ -7,6 +7,9 @@
   <meta name="description" content="Learn about Peak Nuts — our story, values, and commitment to premium organic nuts sourced from sustainable farms.">
   <meta name="theme-color" content="#8B9A46">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -466,5 +469,6 @@
   </button>
 
   <script src="script.js"></script>
+  <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js');}</script>
 </body>
 </html>

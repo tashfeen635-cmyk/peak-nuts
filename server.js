@@ -146,6 +146,87 @@ function sendOrderConfirmationEmail(toEmail, order) {
   });
 }
 
+function sendPasswordResetEmail(toEmail, resetToken) {
+  var resetLink = (process.env.SITE_URL || 'http://localhost:5000') + '/account.html?reset=' + resetToken;
+  const mailOptions = {
+    from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
+    to: toEmail,
+    subject: 'Reset Your Password - Peak Nuts',
+    html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f9f8f5;border-radius:8px">' +
+      '<h1 style="font-family:Georgia,serif;color:#1a1a1a;font-size:28px;margin-bottom:10px">Reset Your Password</h1>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">We received a request to reset your password. Click the button below to create a new password:</p>' +
+      '<div style="text-align:center;margin:30px 0">' +
+        '<a href="' + resetLink + '" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;border-radius:4px;font-size:14px;font-weight:600;letter-spacing:1px">RESET PASSWORD</a>' +
+      '</div>' +
+      '<p style="color:#5d5b5b;font-size:13px;line-height:1.8">This link will expire in 1 hour. If you didn\'t request this, please ignore this email.</p>' +
+      '<p style="color:#8B9A46;font-weight:600;font-size:16px;margin-top:20px">&mdash; The Peak Nuts Team</p>' +
+      '<hr style="border:none;border-top:1px solid #e0e0e0;margin:25px 0">' +
+      '<p style="color:#999;font-size:12px;text-align:center">Peak Nuts &mdash; Premium Organic Nuts &amp; Superfoods</p>' +
+    '</div>'
+  };
+  return transporter.sendMail(mailOptions).catch(function (err) {
+    console.error('Password reset email error:', err.message);
+  });
+}
+
+function sendVerificationEmail(toEmail, verifyToken) {
+  var verifyLink = (process.env.SITE_URL || 'http://localhost:5000') + '/account.html?verify=' + verifyToken;
+  const mailOptions = {
+    from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
+    to: toEmail,
+    subject: 'Verify Your Email - Peak Nuts',
+    html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f9f8f5;border-radius:8px">' +
+      '<h1 style="font-family:Georgia,serif;color:#1a1a1a;font-size:28px;margin-bottom:10px">Verify Your Email</h1>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">Welcome to Peak Nuts! Please verify your email address to activate your account:</p>' +
+      '<div style="text-align:center;margin:30px 0">' +
+        '<a href="' + verifyLink + '" style="background:#8B9A46;color:#fff;padding:14px 32px;text-decoration:none;border-radius:4px;font-size:14px;font-weight:600;letter-spacing:1px">VERIFY EMAIL</a>' +
+      '</div>' +
+      '<p style="color:#5d5b5b;font-size:13px;line-height:1.8">This link will expire in 24 hours.</p>' +
+      '<p style="color:#8B9A46;font-weight:600;font-size:16px;margin-top:20px">&mdash; The Peak Nuts Team</p>' +
+      '<hr style="border:none;border-top:1px solid #e0e0e0;margin:25px 0">' +
+      '<p style="color:#999;font-size:12px;text-align:center">Peak Nuts &mdash; Premium Organic Nuts &amp; Superfoods</p>' +
+    '</div>'
+  };
+  return transporter.sendMail(mailOptions).catch(function (err) {
+    console.error('Verification email error:', err.message);
+  });
+}
+
+function sendOrderStatusEmail(toEmail, order, newStatus) {
+  var statusMsg = '';
+  var statusIcon = '';
+  if (newStatus === 'Shipped') {
+    statusMsg = 'Great news! Your order <strong>' + order.orderId + '</strong> has been shipped and is on its way to you.';
+    statusIcon = '&#128666;';
+  } else if (newStatus === 'Delivered') {
+    statusMsg = 'Your order <strong>' + order.orderId + '</strong> has been delivered. We hope you enjoy your purchase!';
+    statusIcon = '&#9989;';
+  } else {
+    return Promise.resolve();
+  }
+  const mailOptions = {
+    from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
+    to: toEmail,
+    subject: 'Order ' + newStatus + ' - ' + order.orderId + ' | Peak Nuts',
+    html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f9f8f5;border-radius:8px">' +
+      '<h1 style="font-family:Georgia,serif;color:#1a1a1a;font-size:28px;margin-bottom:10px">Order ' + newStatus + ' ' + statusIcon + '</h1>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">' + statusMsg + '</p>' +
+      '<div style="background:#fff;padding:20px;border-radius:6px;margin:20px 0">' +
+        '<p style="margin:0 0 5px;font-size:14px;color:#5d5b5b"><strong>Order ID:</strong> ' + order.orderId + '</p>' +
+        '<p style="margin:0 0 5px;font-size:14px;color:#5d5b5b"><strong>Status:</strong> ' + newStatus + '</p>' +
+        '<p style="margin:0;font-size:14px;color:#5d5b5b"><strong>Delivery:</strong> ' + (order.address || '') + ', ' + (order.city || '') + '</p>' +
+      '</div>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">Thank you for shopping with Peak Nuts!</p>' +
+      '<p style="color:#8B9A46;font-weight:600;font-size:16px;margin-top:20px">&mdash; The Peak Nuts Team</p>' +
+      '<hr style="border:none;border-top:1px solid #e0e0e0;margin:25px 0">' +
+      '<p style="color:#999;font-size:12px;text-align:center">Peak Nuts &mdash; Premium Organic Nuts &amp; Superfoods</p>' +
+    '</div>'
+  };
+  return transporter.sendMail(mailOptions).catch(function (err) {
+    console.error('Order status email error:', err.message);
+  });
+}
+
 function sendWelcomeEmail(toEmail) {
   const mailOptions = {
     from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
@@ -243,6 +324,38 @@ db.exec(`
     userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     createdAt INTEGER NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT NOT NULL UNIQUE,
+    userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    createdAt INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT NOT NULL UNIQUE,
+    userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    createdAt INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS wishlist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    productId INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    createdAt TEXT DEFAULT (datetime('now')),
+    UNIQUE(userId, productId)
+  );
+
+  CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    productId INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+    comment TEXT DEFAULT '',
+    createdAt TEXT DEFAULT (datetime('now')),
+    UNIQUE(userId, productId)
+  );
 `);
 
 // ---- Migrate: add new columns to orders table ----
@@ -260,6 +373,10 @@ if (existingCols.indexOf('oldPrice') === -1) db.exec("ALTER TABLE products ADD C
 if (existingCols.indexOf('rating') === -1) db.exec("ALTER TABLE products ADD COLUMN rating INTEGER DEFAULT 5");
 if (existingCols.indexOf('description') === -1) db.exec("ALTER TABLE products ADD COLUMN description TEXT DEFAULT ''");
 if (existingCols.indexOf('urduName') === -1) db.exec("ALTER TABLE products ADD COLUMN urduName TEXT DEFAULT ''");
+
+// ---- Migrate: add verified column to users table ----
+var userCols = db.prepare("PRAGMA table_info(users)").all().map(function (c) { return c.name; });
+if (userCols.indexOf('verified') === -1) db.exec("ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 0");
 
 // ---- Seed Data ----
 const seedProducts = [
@@ -498,8 +615,13 @@ app.post('/api/orders', (req, res) => {
 app.put('/api/orders/:id', requireAuth, (req, res) => {
   try {
     const { status } = req.body;
-    const result = db.prepare('UPDATE orders SET status=? WHERE id=?').run(status, req.params.id);
-    if (result.changes === 0) return res.status(404).json({ error: 'Order not found' });
+    const order = db.prepare('SELECT * FROM orders WHERE id=?').get(req.params.id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    db.prepare('UPDATE orders SET status=? WHERE id=?').run(status, req.params.id);
+    // Send status notification email
+    if (order.email && (status === 'Shipped' || status === 'Delivered')) {
+      sendOrderStatusEmail(order.email, order, status);
+    }
     res.json({ id: Number(req.params.id), status });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -570,13 +692,20 @@ app.post('/api/register', (req, res) => {
       return res.status(409).json({ error: 'An account with this email already exists' });
     }
     var hashed = hashPassword(password);
-    var result = db.prepare('INSERT INTO users (name, email, password, salt) VALUES (?, ?, ?, ?)').run(name, emailLower, hashed.hash, hashed.salt);
+    var result = db.prepare('INSERT INTO users (name, email, password, salt, verified) VALUES (?, ?, ?, ?, 0)').run(name, emailLower, hashed.hash, hashed.salt);
     var userId = result.lastInsertRowid;
+
+    // Send verification email
+    var verifyToken = generateToken();
+    db.prepare('INSERT INTO email_verification_tokens (token, userId, createdAt) VALUES (?, ?, ?)').run(verifyToken, Number(userId), Date.now());
+    sendVerificationEmail(emailLower, verifyToken);
+
     var token = generateToken();
     activeUserTokens[token] = { userId: Number(userId), createdAt: Date.now() };
     res.status(201).json({
       token: token,
-      profile: { name: name, email: emailLower, phone: '', city: '', address: '' }
+      profile: { name: name, email: emailLower, phone: '', city: '', address: '' },
+      needsVerification: true
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -657,6 +786,226 @@ app.get('/api/user/orders', requireUser, (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ---- Forgot Password ----
+app.post('/api/forgot-password', (req, res) => {
+  try {
+    var { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+    var user = db.prepare('SELECT id, email FROM users WHERE email=?').get(email.toLowerCase());
+    // Always return success to prevent email enumeration
+    if (!user) return res.json({ message: 'If an account exists, a reset link has been sent.' });
+    // Delete old reset tokens for this user
+    db.prepare('DELETE FROM password_reset_tokens WHERE userId=?').run(user.id);
+    var token = generateToken();
+    db.prepare('INSERT INTO password_reset_tokens (token, userId, createdAt) VALUES (?, ?, ?)').run(token, user.id, Date.now());
+    sendPasswordResetEmail(user.email, token);
+    res.json({ message: 'If an account exists, a reset link has been sent.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/reset-password', (req, res) => {
+  try {
+    var { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Token and password are required' });
+    if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    var resetToken = db.prepare('SELECT * FROM password_reset_tokens WHERE token=?').get(token);
+    if (!resetToken) return res.status(400).json({ error: 'Invalid or expired reset link' });
+    // Check expiry (1 hour)
+    if (Date.now() - resetToken.createdAt > 60 * 60 * 1000) {
+      db.prepare('DELETE FROM password_reset_tokens WHERE token=?').run(token);
+      return res.status(400).json({ error: 'Reset link has expired. Please request a new one.' });
+    }
+    var hashed = hashPassword(password);
+    db.prepare('UPDATE users SET password=?, salt=? WHERE id=?').run(hashed.hash, hashed.salt, resetToken.userId);
+    db.prepare('DELETE FROM password_reset_tokens WHERE userId=?').run(resetToken.userId);
+    res.json({ message: 'Password reset successfully. You can now login.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Email Verification ----
+app.get('/api/verify-email', (req, res) => {
+  try {
+    var token = req.query.token;
+    if (!token) return res.status(400).json({ error: 'Token is required' });
+    var verifyToken = db.prepare('SELECT * FROM email_verification_tokens WHERE token=?').get(token);
+    if (!verifyToken) return res.status(400).json({ error: 'Invalid or expired verification link' });
+    // Check expiry (24 hours)
+    if (Date.now() - verifyToken.createdAt > 24 * 60 * 60 * 1000) {
+      db.prepare('DELETE FROM email_verification_tokens WHERE token=?').run(token);
+      return res.status(400).json({ error: 'Verification link has expired. Please request a new one.' });
+    }
+    db.prepare('UPDATE users SET verified=1 WHERE id=?').run(verifyToken.userId);
+    db.prepare('DELETE FROM email_verification_tokens WHERE userId=?').run(verifyToken.userId);
+    res.json({ message: 'Email verified successfully!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/resend-verification', requireUser, (req, res) => {
+  try {
+    var user = req.user;
+    if (user.verified) return res.json({ message: 'Email already verified' });
+    db.prepare('DELETE FROM email_verification_tokens WHERE userId=?').run(user.id);
+    var token = generateToken();
+    db.prepare('INSERT INTO email_verification_tokens (token, userId, createdAt) VALUES (?, ?, ?)').run(token, user.id, Date.now());
+    sendVerificationEmail(user.email, token);
+    res.json({ message: 'Verification email sent' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Wishlist Endpoints ----
+app.get('/api/user/wishlist', requireUser, (req, res) => {
+  try {
+    var rows = db.prepare('SELECT w.id, w.productId, w.createdAt, p.name, p.price, p.image, p.category, p.stock, p.badge, p.oldPrice, p.rating, p.description, p.urduName, p.section FROM wishlist w JOIN products p ON w.productId = p.id WHERE w.userId=? ORDER BY w.createdAt DESC').all(req.user.id);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/user/wishlist', requireUser, (req, res) => {
+  try {
+    var { productId } = req.body;
+    if (!productId) return res.status(400).json({ error: 'Product ID is required' });
+    var existing = db.prepare('SELECT id FROM wishlist WHERE userId=? AND productId=?').get(req.user.id, productId);
+    if (existing) return res.status(409).json({ error: 'Already in wishlist' });
+    db.prepare('INSERT INTO wishlist (userId, productId) VALUES (?, ?)').run(req.user.id, productId);
+    res.status(201).json({ message: 'Added to wishlist' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/user/wishlist/:productId', requireUser, (req, res) => {
+  try {
+    var result = db.prepare('DELETE FROM wishlist WHERE userId=? AND productId=?').run(req.user.id, req.params.productId);
+    if (result.changes === 0) return res.status(404).json({ error: 'Not in wishlist' });
+    res.json({ message: 'Removed from wishlist' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Reviews Endpoints ----
+app.get('/api/reviews/:productId', (req, res) => {
+  try {
+    var rows = db.prepare('SELECT r.id, r.rating, r.comment, r.createdAt, u.name as userName FROM reviews r JOIN users u ON r.userId = u.id WHERE r.productId=? ORDER BY r.createdAt DESC').all(req.params.productId);
+    var avg = db.prepare('SELECT AVG(rating) as avgRating, COUNT(*) as count FROM reviews WHERE productId=?').get(req.params.productId);
+    res.json({ reviews: rows, avgRating: avg.avgRating ? Math.round(avg.avgRating * 10) / 10 : null, count: avg.count });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/reviews/:productId', requireUser, (req, res) => {
+  try {
+    var { rating, comment } = req.body;
+    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    var existing = db.prepare('SELECT id FROM reviews WHERE userId=? AND productId=?').get(req.user.id, req.params.productId);
+    if (existing) {
+      db.prepare('UPDATE reviews SET rating=?, comment=?, createdAt=datetime("now") WHERE id=?').run(rating, comment || '', existing.id);
+      res.json({ message: 'Review updated' });
+    } else {
+      db.prepare('INSERT INTO reviews (productId, userId, rating, comment) VALUES (?, ?, ?, ?)').run(req.params.productId, req.user.id, rating, comment || '');
+      res.status(201).json({ message: 'Review added' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Admin: Users Management ----
+app.get('/api/admin/users', requireAuth, (req, res) => {
+  try {
+    var rows = db.prepare('SELECT id, name, email, phone, city, address, verified, createdAt FROM users ORDER BY createdAt DESC').all();
+    // Add order count for each user
+    var getOrderCount = db.prepare('SELECT COUNT(*) as cnt FROM orders WHERE email=?');
+    var users = rows.map(function (u) {
+      var orderCount = getOrderCount.get(u.email);
+      return { id: u.id, name: u.name, email: u.email, phone: u.phone, city: u.city, address: u.address, verified: u.verified, createdAt: u.createdAt, orderCount: orderCount ? orderCount.cnt : 0 };
+    });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Admin: Sales Analytics ----
+app.get('/api/admin/analytics', requireAuth, (req, res) => {
+  try {
+    var allOrders = db.prepare('SELECT * FROM orders ORDER BY date DESC').all();
+    var getItems = db.prepare('SELECT name, qty, price FROM order_items WHERE order_id=?');
+
+    // Calculate daily sales for last 30 days
+    var dailySales = {};
+    var weeklySales = {};
+    var monthlySales = {};
+    var topProducts = {};
+    var totalRevenue = 0;
+    var statusCounts = { Pending: 0, Shipped: 0, Delivered: 0 };
+
+    for (var i = 0; i < allOrders.length; i++) {
+      var o = allOrders[i];
+      var items = getItems.all(o.id);
+      var orderTotal = 0;
+      for (var j = 0; j < items.length; j++) {
+        var lineTotal = items[j].qty * items[j].price;
+        orderTotal += lineTotal;
+        // Top products
+        if (!topProducts[items[j].name]) topProducts[items[j].name] = { name: items[j].name, qty: 0, revenue: 0 };
+        topProducts[items[j].name].qty += items[j].qty;
+        topProducts[items[j].name].revenue += lineTotal;
+      }
+      totalRevenue += orderTotal;
+      statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
+
+      // Daily
+      dailySales[o.date] = (dailySales[o.date] || 0) + orderTotal;
+
+      // Weekly (ISO week)
+      var d = new Date(o.date + 'T00:00:00');
+      var weekStart = new Date(d);
+      weekStart.setDate(d.getDate() - d.getDay());
+      var weekKey = weekStart.toISOString().slice(0, 10);
+      weeklySales[weekKey] = (weeklySales[weekKey] || 0) + orderTotal;
+
+      // Monthly
+      var monthKey = o.date.slice(0, 7);
+      monthlySales[monthKey] = (monthlySales[monthKey] || 0) + orderTotal;
+    }
+
+    // Sort top products by revenue
+    var topList = Object.values(topProducts).sort(function (a, b) { return b.revenue - a.revenue; }).slice(0, 10);
+
+    // Convert to arrays sorted by date
+    var dailyArr = Object.keys(dailySales).sort().slice(-30).map(function (k) { return { date: k, revenue: dailySales[k] }; });
+    var weeklyArr = Object.keys(weeklySales).sort().slice(-12).map(function (k) { return { week: k, revenue: weeklySales[k] }; });
+    var monthlyArr = Object.keys(monthlySales).sort().slice(-12).map(function (k) { return { month: k, revenue: monthlySales[k] }; });
+
+    res.json({
+      totalRevenue: totalRevenue,
+      totalOrders: allOrders.length,
+      statusCounts: statusCounts,
+      dailySales: dailyArr,
+      weeklySales: weeklyArr,
+      monthlySales: monthlyArr,
+      topProducts: topList
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Static files ----
+app.use(express.static(path.join(__dirname)));
 
 // ---- Start Server ----
 const PORT = process.env.PORT || 5000;

@@ -312,6 +312,71 @@
     });
   }
 
+  // ---- Wishlist heart handlers ----
+  function attachWishlistHandlers(container) {
+    container.querySelectorAll('.wishlist-heart').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var productId = this.getAttribute('data-product-id');
+        var token = localStorage.getItem('peaknuts_user_token');
+        if (!token) {
+          window.location.href = 'account.html';
+          return;
+        }
+        var self = this;
+        var svg = self.querySelector('svg');
+        var isFilled = svg.getAttribute('fill') !== 'none';
+        if (isFilled) {
+          // Remove from wishlist
+          fetch(API_BASE + '/user/wishlist/' + productId, {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+          }).then(function () {
+            svg.setAttribute('fill', 'none');
+            svg.setAttribute('stroke', 'currentColor');
+          });
+        } else {
+          // Add to wishlist
+          fetch(API_BASE + '/user/wishlist', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: productId })
+          }).then(function (res) {
+            if (res.ok || res.status === 409) {
+              svg.setAttribute('fill', '#e04f3a');
+              svg.setAttribute('stroke', '#e04f3a');
+            }
+          });
+        }
+      });
+    });
+  }
+
+  // Load user's wishlist to mark hearts
+  function loadUserWishlist() {
+    var token = localStorage.getItem('peaknuts_user_token');
+    if (!token) return;
+    fetch(API_BASE + '/user/wishlist', {
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+    })
+      .then(function (res) { return res.ok ? res.json() : []; })
+      .then(function (items) {
+        var wishlistIds = {};
+        for (var i = 0; i < items.length; i++) {
+          wishlistIds[items[i].productId] = true;
+        }
+        document.querySelectorAll('.wishlist-heart').forEach(function (btn) {
+          var pid = btn.getAttribute('data-product-id');
+          if (wishlistIds[pid]) {
+            var svg = btn.querySelector('svg');
+            svg.setAttribute('fill', '#e04f3a');
+            svg.setAttribute('stroke', '#e04f3a');
+          }
+        });
+      })
+      .catch(function () {});
+  }
+
   // Add to cart buttons for special product sections (static HTML)
   document.querySelectorAll('.special-product .btn-add-cart').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -528,11 +593,17 @@
     }
     priceHtml += '<span class="price-current">Rs.' + p.price.toFixed(2) + '</span>';
 
+    // Wishlist heart
+    var heartHtml = '<button class="wishlist-heart" data-product-id="' + id + '" title="Add to Wishlist" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.9);border:none;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;transition:all 0.2s;">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>' +
+      '</button>';
+
     return '<div class="product-card">' +
-      '<div class="product-img">' +
+      '<div class="product-img" style="position:relative;">' +
         '<img src="' + imgSrc + '" alt="' + name + '" loading="lazy">' +
         '<div class="product-actions">' + btnHtml + '</div>' +
         badgeHtml +
+        heartHtml +
       '</div>' +
       '<div class="product-info">' +
         '<h3 class="product-name">' + name + '</h3>' +
@@ -643,6 +714,25 @@
 
         // Sync special product hero sections
         syncSpecialProducts(productMap);
+
+        // Attach wishlist handlers and load state
+        document.querySelectorAll('.products-grid').forEach(function (grid) {
+          attachWishlistHandlers(grid);
+        });
+        loadUserWishlist();
+
+        // Apply filters if on shop page
+        if (filterCount) {
+          filterCount.textContent = dbProducts.length + ' product' + (dbProducts.length !== 1 ? 's' : '');
+        }
+
+        // On shop page, switch to paginated flat grid immediately
+        if (isShopPage) {
+          shopFilteredProducts = dbProducts.slice();
+          shopCurrentPage = 1;
+          renderShopPaginated();
+          return;
+        }
 
         // Re-run scroll animations for new cards
         initScrollAnimations();
@@ -841,10 +931,138 @@
     // Store image for cart
     addBtn.setAttribute('data-img', product.image || '');
 
+    // Load and show reviews
+    var productId = product._id || product.id;
+    loadProductReviews(productId);
+
     // Show modal
     productModal.classList.add('active');
     productModalOverlay.classList.add('active');
     document.body.style.overflow = 'hidden';
+  }
+
+  // ---- PRODUCT REVIEWS ----
+  function loadProductReviews(productId) {
+    // Ensure reviews container exists in modal
+    var modalContent = document.querySelector('.product-modal-content');
+    var existingReviews = document.getElementById('modalReviewsSection');
+    if (existingReviews) existingReviews.remove();
+
+    var reviewsDiv = document.createElement('div');
+    reviewsDiv.id = 'modalReviewsSection';
+    reviewsDiv.style.cssText = 'margin-top:24px;border-top:1px solid #eee;padding-top:20px;';
+    reviewsDiv.innerHTML = '<p style="color:#999;font-size:13px;">Loading reviews...</p>';
+    modalContent.appendChild(reviewsDiv);
+
+    fetch(API_BASE + '/reviews/' + productId)
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        renderReviews(reviewsDiv, data, productId);
+      })
+      .catch(function () {
+        reviewsDiv.innerHTML = '';
+      });
+  }
+
+  function renderReviews(container, data, productId) {
+    var reviews = data.reviews || [];
+    var avgRating = data.avgRating;
+    var count = data.count || 0;
+    var token = localStorage.getItem('peaknuts_user_token');
+
+    var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+      '<h3 style="font-family:Georgia,serif;font-size:18px;margin:0;">Reviews' + (count > 0 ? ' (' + count + ')' : '') + '</h3>' +
+      (avgRating ? '<span style="font-size:14px;color:#8B9A46;font-weight:600;">' + avgRating + ' / 5 avg</span>' : '') +
+      '</div>';
+
+    // Review form (only for logged-in users)
+    if (token) {
+      html += '<div style="background:#f9f8f5;padding:16px;border-radius:8px;margin-bottom:16px;">' +
+        '<div style="margin-bottom:8px;font-size:13px;font-weight:600;">Write a Review</div>' +
+        '<div id="reviewStars" style="margin-bottom:8px;">';
+      for (var s = 1; s <= 5; s++) {
+        html += '<span class="review-star" data-star="' + s + '" style="cursor:pointer;font-size:22px;color:#ddd;transition:color 0.2s;">&#9733;</span>';
+      }
+      html += '</div>' +
+        '<textarea id="reviewComment" placeholder="Share your experience..." style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;resize:vertical;min-height:60px;box-sizing:border-box;font-family:inherit;"></textarea>' +
+        '<button id="submitReviewBtn" style="margin-top:8px;background:#1a1a1a;color:#fff;border:none;padding:10px 24px;border-radius:4px;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;">SUBMIT REVIEW</button>' +
+        '</div>';
+    }
+
+    // Existing reviews
+    if (reviews.length === 0) {
+      html += '<p style="color:#999;font-size:13px;text-align:center;padding:16px 0;">No reviews yet. Be the first to review!</p>';
+    } else {
+      for (var i = 0; i < reviews.length; i++) {
+        var r = reviews[i];
+        var stars = '';
+        for (var j = 0; j < 5; j++) {
+          stars += j < r.rating ? '<span style="color:#8B9A46;">&#9733;</span>' : '<span style="color:#ddd;">&#9734;</span>';
+        }
+        var date = r.createdAt ? r.createdAt.slice(0, 10) : '';
+        html += '<div style="padding:12px 0;border-bottom:1px solid #f0f0f0;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+            '<span style="font-weight:600;font-size:13px;">' + escapeHtml(r.userName) + '</span>' +
+            '<span style="font-size:12px;color:#999;">' + date + '</span>' +
+          '</div>' +
+          '<div style="margin-bottom:4px;">' + stars + '</div>' +
+          (r.comment ? '<p style="font-size:13px;color:#555;margin:0;line-height:1.6;">' + escapeHtml(r.comment) + '</p>' : '') +
+          '</div>';
+      }
+    }
+
+    container.innerHTML = html;
+
+    // Star rating interaction
+    var selectedRating = 0;
+    var starEls = container.querySelectorAll('.review-star');
+    starEls.forEach(function (star) {
+      star.addEventListener('mouseenter', function () {
+        var val = parseInt(this.getAttribute('data-star'));
+        starEls.forEach(function (s) {
+          s.style.color = parseInt(s.getAttribute('data-star')) <= val ? '#8B9A46' : '#ddd';
+        });
+      });
+      star.addEventListener('mouseleave', function () {
+        starEls.forEach(function (s) {
+          s.style.color = parseInt(s.getAttribute('data-star')) <= selectedRating ? '#8B9A46' : '#ddd';
+        });
+      });
+      star.addEventListener('click', function () {
+        selectedRating = parseInt(this.getAttribute('data-star'));
+        starEls.forEach(function (s) {
+          s.style.color = parseInt(s.getAttribute('data-star')) <= selectedRating ? '#8B9A46' : '#ddd';
+        });
+      });
+    });
+
+    // Submit review
+    var submitBtn = container.querySelector('#submitReviewBtn');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function () {
+        if (selectedRating === 0) { alert('Please select a rating.'); return; }
+        var comment = (container.querySelector('#reviewComment').value || '').trim();
+        this.disabled = true;
+        this.textContent = 'SUBMITTING...';
+        var self = this;
+
+        fetch(API_BASE + '/reviews/' + productId, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rating: selectedRating, comment: comment })
+        })
+          .then(function (res) { return res.json(); })
+          .then(function () {
+            self.disabled = false;
+            self.textContent = 'SUBMIT REVIEW';
+            loadProductReviews(productId);
+          })
+          .catch(function () {
+            self.disabled = false;
+            self.textContent = 'SUBMIT REVIEW';
+          });
+      });
+    }
   }
 
   function closeProductModal() {
@@ -1199,6 +1417,209 @@
       e.preventDefault();
       openPolicyModal(this.getAttribute('data-policy'));
     });
+  });
+
+  // ---- PRODUCT FILTERING & SORTING (Shop Page) ----
+  var filterCategory = document.getElementById('filterCategory');
+  var filterPrice = document.getElementById('filterPrice');
+  var filterRating = document.getElementById('filterRating');
+  var sortBy = document.getElementById('sortBy');
+  var filterCount = document.getElementById('filterCount');
+
+  // Pagination state for shop page
+  var shopPaginatedGrid = document.getElementById('shopPaginatedGrid');
+  var shopPagination = document.getElementById('shopPagination');
+  var shopPaginatedSection = document.getElementById('shopPaginatedSection');
+  var isShopPage = !!shopPaginatedGrid;
+  var shopCurrentPage = 1;
+  var shopPerPage = 12;
+  var shopFilteredProducts = [];
+
+  function renderPaginationControls(container, currentPage, totalPages, onPageChange) {
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+    var html = '<div style="display:flex;justify-content:center;align-items:center;gap:6px;padding:30px 0;flex-wrap:wrap;">';
+    var btnBase = 'padding:8px 14px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;transition:all 0.2s;';
+    var btnActive = 'padding:8px 14px;border:1px solid #1a1a1a;border-radius:6px;background:#1a1a1a;color:#fff;cursor:default;font-size:13px;font-family:inherit;font-weight:600;';
+    var btnDisabled = 'padding:8px 14px;border:1px solid #eee;border-radius:6px;background:#f5f5f5;color:#ccc;cursor:not-allowed;font-size:13px;font-family:inherit;';
+
+    // Previous
+    if (currentPage > 1) {
+      html += '<button class="pg-btn" data-page="' + (currentPage - 1) + '" style="' + btnBase + '">&laquo; Prev</button>';
+    } else {
+      html += '<button disabled style="' + btnDisabled + '">&laquo; Prev</button>';
+    }
+
+    // Page numbers with ellipsis
+    var startP = Math.max(1, currentPage - 2);
+    var endP = Math.min(totalPages, currentPage + 2);
+    if (startP > 1) {
+      html += '<button class="pg-btn" data-page="1" style="' + btnBase + '">1</button>';
+      if (startP > 2) html += '<span style="padding:0 4px;color:#999;">...</span>';
+    }
+    for (var i = startP; i <= endP; i++) {
+      if (i === currentPage) {
+        html += '<button style="' + btnActive + '">' + i + '</button>';
+      } else {
+        html += '<button class="pg-btn" data-page="' + i + '" style="' + btnBase + '">' + i + '</button>';
+      }
+    }
+    if (endP < totalPages) {
+      if (endP < totalPages - 1) html += '<span style="padding:0 4px;color:#999;">...</span>';
+      html += '<button class="pg-btn" data-page="' + totalPages + '" style="' + btnBase + '">' + totalPages + '</button>';
+    }
+
+    // Next
+    if (currentPage < totalPages) {
+      html += '<button class="pg-btn" data-page="' + (currentPage + 1) + '" style="' + btnBase + '">Next &raquo;</button>';
+    } else {
+      html += '<button disabled style="' + btnDisabled + '">Next &raquo;</button>';
+    }
+    html += '</div>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('.pg-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        onPageChange(parseInt(this.getAttribute('data-page')));
+      });
+    });
+  }
+
+  function renderShopPaginated() {
+    var products = shopFilteredProducts;
+    var totalPages = Math.ceil(products.length / shopPerPage);
+    if (shopCurrentPage > totalPages) shopCurrentPage = totalPages;
+    if (shopCurrentPage < 1) shopCurrentPage = 1;
+
+    var start = (shopCurrentPage - 1) * shopPerPage;
+    var end = start + shopPerPage;
+    var pageProducts = products.slice(start, end);
+
+    var html = '';
+    for (var i = 0; i < pageProducts.length; i++) {
+      html += buildProductCardHTML(pageProducts[i]);
+    }
+    shopPaginatedGrid.innerHTML = html;
+    attachCartHandlers(shopPaginatedGrid);
+    attachProductClickHandlers(shopPaginatedGrid);
+    attachWishlistHandlers(shopPaginatedGrid);
+    loadUserWishlist();
+
+    renderPaginationControls(shopPagination, shopCurrentPage, totalPages, function (page) {
+      shopCurrentPage = page;
+      renderShopPaginated();
+      shopPaginatedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // Show paginated section, hide section-based grids
+    shopPaginatedSection.style.display = '';
+    document.querySelectorAll('.products-section[data-section-name]').forEach(function (s) { s.style.display = 'none'; });
+    // Hide special products, banner and parallax on shop page for cleaner paginated view
+    document.querySelectorAll('.special-product').forEach(function (s) { s.style.display = 'none'; });
+    document.querySelectorAll('.banner-cta').forEach(function (s) { s.style.display = 'none'; });
+    document.querySelectorAll('.parallax-banner').forEach(function (s) { s.style.display = 'none'; });
+
+    initScrollAnimations();
+  }
+
+  function applyFiltersAndSort() {
+    if (!filterCategory) return; // Not on shop page
+    if (allProducts.length === 0) return;
+
+    var filtered = allProducts.slice();
+
+    // Category filter
+    var cat = filterCategory.value;
+    if (cat) {
+      filtered = filtered.filter(function (p) { return p.category === cat; });
+    }
+
+    // Price filter
+    var priceRange = filterPrice.value;
+    if (priceRange) {
+      var parts = priceRange.split('-');
+      var minP = parseFloat(parts[0]);
+      var maxP = parts[1] ? parseFloat(parts[1]) : Infinity;
+      filtered = filtered.filter(function (p) { return p.price >= minP && p.price <= maxP; });
+    }
+
+    // Rating filter
+    var minRating = filterRating.value;
+    if (minRating) {
+      var r = parseInt(minRating);
+      filtered = filtered.filter(function (p) { return (p.rating || 5) >= r; });
+    }
+
+    // Sort
+    var sort = sortBy.value;
+    if (sort === 'price-low') {
+      filtered.sort(function (a, b) { return a.price - b.price; });
+    } else if (sort === 'price-high') {
+      filtered.sort(function (a, b) { return b.price - a.price; });
+    } else if (sort === 'rating') {
+      filtered.sort(function (a, b) { return (b.rating || 5) - (a.rating || 5); });
+    } else if (sort === 'name') {
+      filtered.sort(function (a, b) { return a.name.localeCompare(b.name); });
+    }
+
+    // Update count
+    if (filterCount) {
+      filterCount.textContent = filtered.length + ' product' + (filtered.length !== 1 ? 's' : '');
+    }
+
+    if (isShopPage) {
+      // Use paginated flat grid on shop page
+      shopFilteredProducts = filtered;
+      shopCurrentPage = 1;
+      renderShopPaginated();
+    } else {
+      // Re-render section-based grids (home page)
+      var sections = { popular: [], trending: [], bestselling: [] };
+      filtered.forEach(function (p) {
+        if (p.section && sections[p.section]) {
+          sections[p.section].push(p);
+        }
+      });
+
+      var gridMap = {
+        popular: document.getElementById('popularGrid'),
+        trending: document.getElementById('trendingGrid'),
+        bestselling: document.getElementById('bestsellingGrid')
+      };
+
+      for (var key in gridMap) {
+        var grid = gridMap[key];
+        if (!grid) continue;
+        var items = sections[key];
+        var parentSection = grid.closest('.products-section');
+
+        if (items.length === 0) {
+          grid.innerHTML = '';
+          if (parentSection) parentSection.style.display = 'none';
+        } else {
+          if (parentSection) parentSection.style.display = '';
+          var html = '';
+          for (var i = 0; i < items.length; i++) {
+            html += buildProductCardHTML(items[i]);
+          }
+          grid.innerHTML = html;
+          attachCartHandlers(grid);
+          attachProductClickHandlers(grid);
+        }
+      }
+    }
+  }
+
+  if (filterCategory) filterCategory.addEventListener('change', applyFiltersAndSort);
+  if (filterPrice) filterPrice.addEventListener('change', applyFiltersAndSort);
+  if (filterRating) filterRating.addEventListener('change', applyFiltersAndSort);
+  if (sortBy) sortBy.addEventListener('change', applyFiltersAndSort);
+
+  // ---- WISHLIST EVENT LISTENER (for account page add-to-cart) ----
+  window.addEventListener('peaknuts-add-to-cart', function (e) {
+    if (e.detail) {
+      addToCart(e.detail.name, e.detail.price, e.detail.image);
+      openCart();
+    }
   });
 
   // ---- Initialize ----
