@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const rateLimit = require('express-rate-limit');
 
 // ---- Auth Setup ----
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
@@ -184,6 +185,20 @@ function sendWelcomeEmail(toEmail) {
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
+
+// ---- Rate Limiting for Auth Endpoints ----
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts, please try again after 15 minutes' }
+});
+
+app.use('/api/login', authLimiter);
+app.use('/api/register', authLimiter);
+app.use('/api/user/login', authLimiter);
+app.use('/api/forgot-password', authLimiter);
 
 // ---- Mongoose Schemas ----
 const productSchema = new mongoose.Schema({
