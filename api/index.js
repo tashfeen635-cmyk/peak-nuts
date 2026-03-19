@@ -78,7 +78,7 @@ function sendOrderConfirmationEmail(toEmail, order) {
 }
 
 function sendPasswordResetEmail(toEmail, resetToken) {
-  var resetLink = (process.env.SITE_URL || 'https://peak-nuts.vercel.app') + '/account.html?reset=' + resetToken;
+  var resetLink = (process.env.SITE_URL || 'https://peaknuts.com') + '/account.html?reset=' + resetToken;
   const mailOptions = {
     from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
     to: toEmail,
@@ -101,7 +101,7 @@ function sendPasswordResetEmail(toEmail, resetToken) {
 }
 
 function sendVerificationEmail(toEmail, verifyToken) {
-  var verifyLink = (process.env.SITE_URL || 'https://peak-nuts.vercel.app') + '/account.html?verify=' + verifyToken;
+  var verifyLink = (process.env.SITE_URL || 'https://peaknuts.com') + '/account.html?verify=' + verifyToken;
   const mailOptions = {
     from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
     to: toEmail,
