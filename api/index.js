@@ -411,6 +411,8 @@ async function connectDB() {
   if (isConnected) return;
   if (!process.env.MONGO_URI) throw new Error('MONGO_URI env variable is not set');
   await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 });
+  // Drop stale indexes from old schema (e.g. token_1 on passwordresettokens)
+  await PasswordResetToken.syncIndexes().catch(function () {});
   isConnected = true;
 }
 
