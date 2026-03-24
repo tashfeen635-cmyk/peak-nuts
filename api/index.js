@@ -681,7 +681,7 @@ app.post('/api/register', async (req, res) => {
     // Send verification email
     var verifyToken = crypto.randomBytes(32).toString('hex');
     await EmailVerificationToken.create({ token: verifyToken, userId: user._id });
-    sendVerificationEmail(user.email, verifyToken);
+    await sendVerificationEmail(user.email, verifyToken);
 
     var token = crypto.randomBytes(32).toString('hex');
     await UserToken.create({ token: token, userId: user._id });
@@ -778,7 +778,7 @@ app.post('/api/forgot-password', async (req, res) => {
     await PasswordResetToken.deleteMany({ userId: user._id });
     var code = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
     await PasswordResetToken.create({ code: code, userId: user._id });
-    sendPasswordResetEmail(user.email, code);
+    await sendPasswordResetEmail(user.email, code);
     res.json({ message: 'If an account exists, a reset code has been sent.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -886,7 +886,7 @@ app.post('/api/resend-verification', requireUser, async (req, res) => {
     await EmailVerificationToken.deleteMany({ userId: user._id });
     var token = crypto.randomBytes(32).toString('hex');
     await EmailVerificationToken.create({ token: token, userId: user._id });
-    sendVerificationEmail(user.email, token);
+    await sendVerificationEmail(user.email, token);
     res.json({ message: 'Verification email sent' });
   } catch (err) {
     res.status(500).json({ error: err.message });
