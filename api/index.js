@@ -63,8 +63,14 @@ function sendOrderConfirmationEmail(toEmail, order) {
           '<th style="padding:10px 12px;text-align:right;font-size:13px">Price</th>' +
         '</tr></thead>' +
         '<tbody>' + itemsHtml + '</tbody>' +
-        '<tfoot><tr><td colspan="2" style="padding:12px;font-weight:bold;font-size:15px;border-top:2px solid #1a1a1a">Total</td>' +
-          '<td style="padding:12px;font-weight:bold;font-size:15px;text-align:right;border-top:2px solid #1a1a1a">Rs.' + total.toFixed(2) + '</td></tr></tfoot>' +
+        '<tfoot>' +
+          '<tr><td colspan="2" style="padding:8px 12px;font-size:14px;color:#5d5b5b;border-top:1px solid #eee">Subtotal</td>' +
+            '<td style="padding:8px 12px;font-size:14px;color:#5d5b5b;text-align:right;border-top:1px solid #eee">Rs.' + total.toFixed(2) + '</td></tr>' +
+          '<tr><td colspan="2" style="padding:8px 12px;font-size:14px;color:#5d5b5b">Shipping</td>' +
+            '<td style="padding:8px 12px;font-size:14px;color:#6B7A36;font-weight:600;text-align:right">' + (total >= 5933 ? 'FREE' : 'Rs.5.00') + '</td></tr>' +
+          '<tr><td colspan="2" style="padding:12px;font-weight:bold;font-size:15px;border-top:2px solid #1a1a1a">Total</td>' +
+            '<td style="padding:12px;font-weight:bold;font-size:15px;text-align:right;border-top:2px solid #1a1a1a">Rs.' + (total + (total >= 5933 ? 0 : 5)).toFixed(2) + '</td></tr>' +
+        '</tfoot>' +
       '</table>' +
       '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">We will notify you when your order is shipped. Stay healthy, stay natural!</p>' +
       '<p style="color:#8B9A46;font-weight:600;font-size:16px;margin-top:20px">&mdash; The Peak Nuts Team</p>' +
@@ -78,7 +84,7 @@ function sendOrderConfirmationEmail(toEmail, order) {
 }
 
 function sendPasswordResetEmail(toEmail, resetToken) {
-  var resetLink = (process.env.SITE_URL || 'https://peaknuts.com') + '/account.html?reset=' + resetToken;
+  var resetLink = (process.env.SITE_URL || 'https://peak-nuts.vercel.app') + '/account.html?reset=' + resetToken;
   const mailOptions = {
     from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
     to: toEmail,
@@ -101,7 +107,7 @@ function sendPasswordResetEmail(toEmail, resetToken) {
 }
 
 function sendVerificationEmail(toEmail, verifyToken) {
-  var verifyLink = (process.env.SITE_URL || 'https://peaknuts.com') + '/account.html?verify=' + verifyToken;
+  var verifyLink = (process.env.SITE_URL || 'https://peak-nuts.vercel.app') + '/account.html?verify=' + verifyToken;
   const mailOptions = {
     from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
     to: toEmail,

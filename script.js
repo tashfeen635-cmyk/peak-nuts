@@ -19,6 +19,8 @@
   const cartClose = document.getElementById('cartClose');
   const cartBody = document.getElementById('cartBody');
   const cartFooter = document.getElementById('cartFooter');
+  const cartSubtotal = document.getElementById('cartSubtotal');
+  const cartShipping = document.getElementById('cartShipping');
   const cartTotal = document.getElementById('cartTotal');
   const cartCount = document.querySelector('.cart-count');
   const backToTop = document.getElementById('backToTop');
@@ -284,7 +286,10 @@
     });
 
     cartBody.innerHTML = html;
-    cartTotal.textContent = 'Rs.' + total.toFixed(2);
+    var shipping = total >= 5933 ? 0 : 5;
+    cartSubtotal.textContent = 'Rs.' + total.toFixed(2);
+    cartShipping.textContent = shipping === 0 ? 'FREE' : 'Rs.' + shipping.toFixed(2);
+    cartTotal.textContent = 'Rs.' + (total + shipping).toFixed(2);
     cartFooter.style.display = 'block';
 
     // Attach qty +/- handlers
@@ -1175,6 +1180,8 @@
   var checkoutBack = document.getElementById('checkoutBack');
   var checkoutForm = document.getElementById('checkoutForm');
   var checkoutItems = document.getElementById('checkoutItems');
+  var checkoutSubtotalEl = document.getElementById('checkoutSubtotal');
+  var checkoutShippingEl = document.getElementById('checkoutShipping');
   var checkoutTotalEl = document.getElementById('checkoutTotal');
   var checkoutSuccess = document.getElementById('checkoutSuccess');
   var successOrderId = document.getElementById('successOrderId');
@@ -1233,7 +1240,10 @@
       '</div>';
     }
     checkoutItems.innerHTML = html;
-    checkoutTotalEl.textContent = 'Rs.' + total.toFixed(2);
+    var shipping = total >= 5933 ? 0 : 5;
+    checkoutSubtotalEl.textContent = 'Rs.' + total.toFixed(2);
+    checkoutShippingEl.textContent = shipping === 0 ? 'FREE' : 'Rs.' + shipping.toFixed(2);
+    checkoutTotalEl.textContent = 'Rs.' + (total + shipping).toFixed(2);
   }
 
   function buildOrderItems() {
