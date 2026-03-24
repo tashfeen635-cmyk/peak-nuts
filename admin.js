@@ -231,6 +231,9 @@
     if (sectionName === 'users') {
       loadUsers();
     }
+    if (sectionName === 'reviews') {
+      loadAllReviews();
+    }
     if (sectionName === 'analytics') {
       loadAnalytics();
     }
@@ -979,6 +982,90 @@
       renderAnalyticsChart();
     });
   });
+
+  // ---- REVIEWS MANAGEMENT ----
+  var allReviews = [];
+  var reviewsCurrentPage = 1;
+  var reviewsPerPage = 10;
+
+  function loadAllReviews() {
+    apiGet('/admin/reviews').then(function (data) {
+      allReviews = data;
+      renderAdminReviews(allReviews);
+    }).catch(function () {});
+  }
+
+  function renderAdminReviews(reviewsData) {
+    var tbody = document.getElementById('reviewsTableBody');
+    var paginationContainer = document.getElementById('reviewsPagination');
+    if (!tbody) return;
+
+    var totalPages = Math.ceil(reviewsData.length / reviewsPerPage);
+    if (reviewsCurrentPage > totalPages) reviewsCurrentPage = totalPages;
+    if (reviewsCurrentPage < 1) reviewsCurrentPage = 1;
+
+    var start = (reviewsCurrentPage - 1) * reviewsPerPage;
+    var end = start + reviewsPerPage;
+    var pageReviews = reviewsData.slice(start, end);
+
+    var html = '';
+    for (var i = 0; i < pageReviews.length; i++) {
+      var r = pageReviews[i];
+      var stars = '';
+      for (var s = 0; s < 5; s++) {
+        stars += s < r.rating ? '&#9733;' : '&#9734;';
+      }
+      var dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—';
+      html += '<tr>' +
+        '<td>' + (start + i + 1) + '</td>' +
+        '<td><strong>' + escapeHtml(r.productName) + '</strong></td>' +
+        '<td>' + escapeHtml(r.userName) + '</td>' +
+        '<td><span style="color:#f0ad4e;">' + stars + '</span></td>' +
+        '<td>' + escapeHtml(r.comment || '—') + '</td>' +
+        '<td>' + dateStr + '</td>' +
+        '<td><button class="btn-icon danger" data-delete-review="' + r._id + '" title="Delete Review">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' +
+        '</button></td>' +
+        '</tr>';
+    }
+    tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#999;padding:20px;">No reviews yet.</td></tr>';
+
+    // Pagination
+    if (paginationContainer) {
+      renderOrdersPaginationControls(paginationContainer, reviewsCurrentPage, totalPages, function (page) {
+        reviewsCurrentPage = page;
+        renderAdminReviews(reviewsData);
+      });
+    }
+
+    // Delete handlers
+    tbody.querySelectorAll('[data-delete-review]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = this.getAttribute('data-delete-review');
+        if (!confirm('Delete this review? This action cannot be undone.')) return;
+        apiDelete('/admin/reviews/' + id).then(function () {
+          showToast('Review deleted', 'success');
+          loadAllReviews();
+        }).catch(function () {
+          showToast('Failed to delete review', 'error');
+        });
+      });
+    });
+  }
+
+  // Review search
+  var reviewSearchInput = document.getElementById('reviewSearchInput');
+  if (reviewSearchInput) {
+    reviewSearchInput.addEventListener('input', function () {
+      var query = this.value.trim().toLowerCase();
+      if (!query) { reviewsCurrentPage = 1; renderAdminReviews(allReviews); return; }
+      var filtered = allReviews.filter(function (r) {
+        return (r.productName + ' ' + r.userName + ' ' + (r.comment || '')).toLowerCase().indexOf(query) !== -1;
+      });
+      reviewsCurrentPage = 1;
+      renderAdminReviews(filtered);
+    });
+  }
 
   // ---- KEYBOARD SHORTCUTS ----
   document.addEventListener('keydown', function (e) {

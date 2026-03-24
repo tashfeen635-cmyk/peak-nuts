@@ -614,7 +614,7 @@
         '<h3 class="product-name">' + name + '</h3>' +
         urduHtml +
         descHtml +
-        '<div class="product-rating"><span class="stars">' + buildStars(p.rating) + '</span></div>' +
+        '<div class="product-rating"><span class="stars">' + buildStars(p.reviewAvg != null ? p.reviewAvg : p.rating) + '</span>' + (p.reviewCount > 0 ? '<span class="review-count">(' + p.reviewCount + ')</span>' : '') + '</div>' +
         '<div class="product-price">' + priceHtml + '</div>' +
       '</div>' +
     '</div>';
@@ -719,6 +719,18 @@
 
         // Sync special product hero sections
         syncSpecialProducts(productMap);
+
+        // Update special product review counts from real data
+        var shilajit = productMap['Pure Himalayan Shilajit'];
+        var tumoro = productMap['Tumoro Wild Thyme Tea'];
+        var shilajitCountEl = document.getElementById('shilajit-review-count');
+        var tumoroCountEl = document.getElementById('tumoro-review-count');
+        if (shilajitCountEl) {
+          shilajitCountEl.textContent = shilajit && shilajit.reviewCount > 0 ? '(' + shilajit.reviewCount + ' Reviews)' : '(0 Reviews)';
+        }
+        if (tumoroCountEl) {
+          tumoroCountEl.textContent = tumoro && tumoro.reviewCount > 0 ? '(' + tumoro.reviewCount + ' Reviews)' : '(0 Reviews)';
+        }
 
         // Attach wishlist handlers and load state
         document.querySelectorAll('.products-grid').forEach(function (grid) {
@@ -1556,7 +1568,7 @@
     var minRating = filterRating.value;
     if (minRating) {
       var r = parseInt(minRating);
-      filtered = filtered.filter(function (p) { return (p.rating || 5) >= r; });
+      filtered = filtered.filter(function (p) { var avg = p.reviewAvg != null ? p.reviewAvg : (p.rating || 5); return avg >= r; });
     }
 
     // Sort
@@ -1566,7 +1578,7 @@
     } else if (sort === 'price-high') {
       filtered.sort(function (a, b) { return b.price - a.price; });
     } else if (sort === 'rating') {
-      filtered.sort(function (a, b) { return (b.rating || 5) - (a.rating || 5); });
+      filtered.sort(function (a, b) { var ra = a.reviewAvg != null ? a.reviewAvg : (a.rating || 5); var rb = b.reviewAvg != null ? b.reviewAvg : (b.rating || 5); return rb - ra; });
     } else if (sort === 'name') {
       filtered.sort(function (a, b) { return a.name.localeCompare(b.name); });
     }

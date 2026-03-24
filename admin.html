@@ -82,6 +82,12 @@
         </svg>
         <span>Users</span>
       </a>
+      <a href="#" class="nav-link" data-section="reviews">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+        <span>Reviews</span>
+      </a>
       <a href="#" class="nav-link" data-section="analytics">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="20" x2="18" y2="10"></line>
@@ -350,6 +356,38 @@
             </thead>
             <tbody id="usersTableBody"></tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== REVIEWS SECTION ===== -->
+    <section class="content-section" id="section-reviews">
+      <div class="section-top">
+        <div>
+          <h1 class="page-title">Reviews</h1>
+          <p class="page-subtitle">Moderate customer reviews</p>
+        </div>
+      </div>
+      <div class="card">
+        <div style="padding:12px 16px;border-bottom:1px solid #eee;">
+          <input type="text" id="reviewSearchInput" placeholder="Search by product, user or comment..." style="width:100%;max-width:300px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>User</th>
+                <th>Rating</th>
+                <th>Comment</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reviewsTableBody"></tbody>
+          </table>
+          <div id="reviewsPagination"></div>
         </div>
       </div>
     </section>

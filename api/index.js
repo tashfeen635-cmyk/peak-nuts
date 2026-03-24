@@ -511,7 +511,23 @@ app.post('/api/seed', requireAuth, async (req, res) => {
 app.get('/api/products', async (req, res) => {
   try {
     await connectDB();
-    res.json(await Product.find());
+    var products = await Product.find();
+    // Aggregate review stats per product
+    var reviewStats = await Review.aggregate([
+      { $group: { _id: '$productId', avg: { $avg: '$rating' }, count: { $sum: 1 } } }
+    ]);
+    var statsMap = {};
+    for (var i = 0; i < reviewStats.length; i++) {
+      statsMap[reviewStats[i]._id.toString()] = reviewStats[i];
+    }
+    var result = products.map(function (p) {
+      var obj = p.toObject();
+      var stat = statsMap[p._id.toString()];
+      obj.reviewAvg = stat ? Math.round(stat.avg * 10) / 10 : null;
+      obj.reviewCount = stat ? stat.count : 0;
+      return obj;
+    });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -997,6 +1013,42 @@ app.post('/api/reviews/:productId', requireUser, async (req, res) => {
       await Review.create({ productId: req.params.productId, userId: req.user._id, rating: rating, comment: comment || '' });
       res.status(201).json({ message: 'Review added' });
     }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Admin: Reviews Management ----
+app.get('/api/admin/reviews', requireAuth, async (req, res) => {
+  try {
+    await connectDB();
+    var reviews = await Review.find().sort({ createdAt: -1 });
+    var result = [];
+    for (var i = 0; i < reviews.length; i++) {
+      var r = reviews[i];
+      var user = await User.findById(r.userId);
+      var product = await Product.findById(r.productId);
+      result.push({
+        _id: r._id,
+        productName: product ? product.name : 'Deleted Product',
+        userName: user ? user.name : 'Unknown',
+        rating: r.rating,
+        comment: r.comment,
+        createdAt: r.createdAt
+      });
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/reviews/:id', requireAuth, async (req, res) => {
+  try {
+    await connectDB();
+    var review = await Review.findByIdAndDelete(req.params.id);
+    if (!review) return res.status(404).json({ error: 'Review not found' });
+    res.json({ message: 'Review deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
