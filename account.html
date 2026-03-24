@@ -133,27 +133,47 @@
               </div>
             </form>
 
-            <!-- Forgot Password Form (hidden by default) -->
+            <!-- Step 1: Forgot Password — Enter Email (hidden by default) -->
             <div id="forgotPasswordForm" style="display:none;">
               <div class="auth-error" id="forgotError"></div>
               <div class="auth-success" id="forgotSuccess" style="display:none;background:#e8f5e9;color:#2e7d32;padding:12px 16px;border-radius:6px;font-size:13px;margin-bottom:16px;"></div>
               <form id="forgotFormEl">
+                <p style="color:#5d5b5b;font-size:13px;line-height:1.6;margin-bottom:16px;">Enter your registered email and we'll send you a 6-digit code to reset your password.</p>
                 <div class="checkout-form-group">
                   <label for="forgotEmail">Email Address</label>
                   <input type="email" id="forgotEmail" required placeholder="Enter your registered email">
                 </div>
-                <button type="submit" class="btn btn-primary btn-block" id="forgotBtn">SEND RESET LINK</button>
+                <button type="submit" class="btn btn-primary btn-block" id="forgotBtn">SEND CODE</button>
                 <div style="text-align:center;margin-top:12px;">
                   <a href="#" id="backToLoginLink" style="color:#8B9A46;font-size:13px;text-decoration:none;">Back to Login</a>
                 </div>
               </form>
             </div>
 
-            <!-- Reset Password Form (hidden by default, shown via URL param) -->
+            <!-- Step 2: Enter OTP Code (hidden by default) -->
+            <div id="otpVerifyForm" style="display:none;">
+              <div class="auth-error" id="otpError"></div>
+              <div class="auth-success" id="otpSuccess" style="display:none;background:#e8f5e9;color:#2e7d32;padding:12px 16px;border-radius:6px;font-size:13px;margin-bottom:16px;"></div>
+              <form id="otpFormEl">
+                <p style="color:#5d5b5b;font-size:13px;line-height:1.6;margin-bottom:16px;">We sent a 6-digit code to <strong id="otpEmailDisplay"></strong>. Enter it below.</p>
+                <div class="checkout-form-group" style="text-align:center;">
+                  <label for="otpCode">Verification Code</label>
+                  <input type="text" id="otpCode" required placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code" style="font-family:monospace;font-size:28px;letter-spacing:8px;text-align:center;padding:14px;max-width:240px;margin:0 auto;display:block;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="otpVerifyBtn">VERIFY CODE</button>
+                <div style="text-align:center;margin-top:14px;display:flex;justify-content:center;gap:16px;">
+                  <a href="#" id="resendCodeLink" style="color:#8B9A46;font-size:13px;text-decoration:none;">Resend Code</a>
+                  <a href="#" id="changeEmailLink" style="color:#8B9A46;font-size:13px;text-decoration:none;">Change Email</a>
+                </div>
+              </form>
+            </div>
+
+            <!-- Step 3: Set New Password (hidden by default) -->
             <div id="resetPasswordForm" style="display:none;">
               <div class="auth-error" id="resetError"></div>
               <div class="auth-success" id="resetSuccess" style="display:none;background:#e8f5e9;color:#2e7d32;padding:12px 16px;border-radius:6px;font-size:13px;margin-bottom:16px;"></div>
               <form id="resetFormEl">
+                <p style="color:#5d5b5b;font-size:13px;line-height:1.6;margin-bottom:16px;">Code verified! Set your new password below.</p>
                 <div class="checkout-form-group">
                   <label for="resetPassword">New Password</label>
                   <div class="password-wrap">

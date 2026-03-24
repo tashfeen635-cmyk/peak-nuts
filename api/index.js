@@ -83,19 +83,19 @@ function sendOrderConfirmationEmail(toEmail, order) {
   });
 }
 
-function sendPasswordResetEmail(toEmail, resetToken) {
-  var resetLink = (process.env.SITE_URL || 'https://peak-nuts.vercel.app') + '/account.html?reset=' + resetToken;
+function sendPasswordResetEmail(toEmail, code) {
   const mailOptions = {
     from: '"Peak Nuts" <' + process.env.EMAIL_USER + '>',
     to: toEmail,
-    subject: 'Reset Your Password - Peak Nuts',
+    subject: 'Your Password Reset Code - Peak Nuts',
     html: '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f9f8f5;border-radius:8px">' +
       '<h1 style="font-family:Georgia,serif;color:#1a1a1a;font-size:28px;margin-bottom:10px">Reset Your Password</h1>' +
-      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">We received a request to reset your password. Click the button below to create a new password:</p>' +
-      '<div style="text-align:center;margin:30px 0">' +
-        '<a href="' + resetLink + '" style="background:#1a1a1a;color:#fff;padding:14px 32px;text-decoration:none;border-radius:4px;font-size:14px;font-weight:600;letter-spacing:1px">RESET PASSWORD</a>' +
+      '<p style="color:#5d5b5b;font-size:15px;line-height:1.8">We received a request to reset your password. Use the code below to proceed:</p>' +
+      '<div style="text-align:center;margin:30px 0;padding:24px;background:#fff;border-radius:8px;border:2px dashed #ddd">' +
+        '<p style="color:#999;font-size:13px;margin:0 0 8px;letter-spacing:1px">YOUR RESET CODE</p>' +
+        '<div style="font-family:monospace;font-size:40px;font-weight:700;letter-spacing:10px;color:#1a1a1a">' + code + '</div>' +
       '</div>' +
-      '<p style="color:#5d5b5b;font-size:13px;line-height:1.8">This link will expire in 1 hour. If you didn\'t request this, please ignore this email.</p>' +
+      '<p style="color:#5d5b5b;font-size:13px;line-height:1.8">This code will expire in <strong>10 minutes</strong>. If you didn\'t request this, please ignore this email.</p>' +
       '<p style="color:#8B9A46;font-weight:600;font-size:16px;margin-top:20px">&mdash; The Peak Nuts Team</p>' +
       '<hr style="border:none;border-top:1px solid #e0e0e0;margin:25px 0">' +
       '<p style="color:#999;font-size:12px;text-align:center">Peak Nuts &mdash; Premium Organic Nuts &amp; Superfoods</p>' +
@@ -205,6 +205,7 @@ app.use('/api/login', authLimiter);
 app.use('/api/register', authLimiter);
 app.use('/api/user/login', authLimiter);
 app.use('/api/forgot-password', authLimiter);
+app.use('/api/verify-reset-code', authLimiter);
 
 // ---- Mongoose Schemas ----
 const productSchema = new mongoose.Schema({
@@ -277,9 +278,11 @@ const userTokenSchema = new mongoose.Schema({
 });
 
 const passwordResetTokenSchema = new mongoose.Schema({
-  token: { type: String, required: true, unique: true },
+  code: { type: String, required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  createdAt: { type: Date, default: Date.now, expires: 3600 }
+  attempts: { type: Number, default: 0 },
+  grantToken: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now, expires: 600 }
 });
 
 const emailVerificationTokenSchema = new mongoose.Schema({
@@ -760,7 +763,7 @@ app.get('/api/user/orders', requireUser, async (req, res) => {
   }
 });
 
-// ---- Forgot Password ----
+// ---- Forgot Password (OTP-based) ----
 app.post('/api/forgot-password', async (req, res) => {
   try {
     await connectDB();
@@ -768,35 +771,85 @@ app.post('/api/forgot-password', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email is required' });
     var user = await User.findOne({ email: email.toLowerCase() });
     // Always return success to prevent email enumeration
-    if (!user) return res.json({ message: 'If an account exists, a reset link has been sent.' });
+    if (!user) return res.json({ message: 'If an account exists, a reset code has been sent.' });
     // Delete old reset tokens for this user
     await PasswordResetToken.deleteMany({ userId: user._id });
-    var token = crypto.randomBytes(32).toString('hex');
-    await PasswordResetToken.create({ token: token, userId: user._id });
-    sendPasswordResetEmail(user.email, token);
-    res.json({ message: 'If an account exists, a reset link has been sent.' });
+    var code = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    await PasswordResetToken.create({ code: code, userId: user._id });
+    sendPasswordResetEmail(user.email, code);
+    res.json({ message: 'If an account exists, a reset code has been sent.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
+// ---- Verify Reset Code ----
+app.post('/api/verify-reset-code', async (req, res) => {
+  try {
+    await connectDB();
+    var { email, code } = req.body;
+    if (!email || !code) return res.status(400).json({ error: 'Email and code are required' });
+    var user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(400).json({ error: 'Invalid code or email.' });
+    var resetEntry = await PasswordResetToken.findOne({ userId: user._id });
+    if (!resetEntry) return res.status(400).json({ error: 'No reset code found. Please request a new one.' });
+    // Check expiry (10 minutes)
+    if (Date.now() - resetEntry.createdAt.getTime() > 10 * 60 * 1000) {
+      await PasswordResetToken.deleteMany({ userId: user._id });
+      return res.status(400).json({ error: 'Code has expired. Please request a new one.' });
+    }
+    // Check max attempts
+    if (resetEntry.attempts >= 3) {
+      await PasswordResetToken.deleteMany({ userId: user._id });
+      return res.status(400).json({ error: 'Too many failed attempts. Please request a new code.' });
+    }
+    // Verify code
+    if (resetEntry.code !== code) {
+      resetEntry.attempts += 1;
+      await resetEntry.save();
+      var remaining = 3 - resetEntry.attempts;
+      if (remaining <= 0) {
+        await PasswordResetToken.deleteMany({ userId: user._id });
+        return res.status(400).json({ error: 'Too many failed attempts. Please request a new code.' });
+      }
+      return res.status(400).json({ error: 'Invalid code. ' + remaining + ' attempt(s) remaining.' });
+    }
+    // Code is valid — generate a grant token
+    var grantToken = crypto.randomBytes(32).toString('hex');
+    resetEntry.grantToken = grantToken;
+    await resetEntry.save();
+    res.json({ message: 'Code verified.', grantToken: grantToken });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Reset Password (with grant token + auto-login) ----
 app.post('/api/reset-password', async (req, res) => {
   try {
     await connectDB();
-    var { token, password } = req.body;
-    if (!token || !password) return res.status(400).json({ error: 'Token and password are required' });
+    var { grantToken, password } = req.body;
+    if (!grantToken || !password) return res.status(400).json({ error: 'Grant token and password are required' });
     if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
-    var resetToken = await PasswordResetToken.findOne({ token: token });
-    if (!resetToken) return res.status(400).json({ error: 'Invalid or expired reset link' });
-    // Check expiry (1 hour)
-    if (Date.now() - resetToken.createdAt.getTime() > 60 * 60 * 1000) {
-      await PasswordResetToken.deleteOne({ token: token });
-      return res.status(400).json({ error: 'Reset link has expired. Please request a new one.' });
+    var resetEntry = await PasswordResetToken.findOne({ grantToken: grantToken });
+    if (!resetEntry || !resetEntry.grantToken) return res.status(400).json({ error: 'Invalid or expired reset session. Please start over.' });
+    // Check expiry (10 minutes)
+    if (Date.now() - resetEntry.createdAt.getTime() > 10 * 60 * 1000) {
+      await PasswordResetToken.deleteMany({ userId: resetEntry.userId });
+      return res.status(400).json({ error: 'Reset session has expired. Please request a new code.' });
     }
     var hashed = hashPassword(password);
-    await User.findByIdAndUpdate(resetToken.userId, { password: hashed.hash, salt: hashed.salt });
-    await PasswordResetToken.deleteMany({ userId: resetToken.userId });
-    res.json({ message: 'Password reset successfully. You can now login.' });
+    await User.findByIdAndUpdate(resetEntry.userId, { password: hashed.hash, salt: hashed.salt });
+    await PasswordResetToken.deleteMany({ userId: resetEntry.userId });
+    // Auto-login: create session token and return profile
+    var user = await User.findById(resetEntry.userId);
+    var sessionToken = crypto.randomBytes(32).toString('hex');
+    await UserToken.create({ token: sessionToken, userId: user._id });
+    res.json({
+      message: 'Password reset successfully!',
+      token: sessionToken,
+      profile: { name: user.name, email: user.email, phone: user.phone, city: user.city, address: user.address }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

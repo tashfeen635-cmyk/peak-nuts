@@ -63,7 +63,7 @@
   var loginBtn = document.getElementById('loginBtn');
   var registerBtn = document.getElementById('registerBtn');
 
-  // Forgot password elements
+  // Forgot password elements (Step 1)
   var forgotPasswordLink = document.getElementById('forgotPasswordLink');
   var forgotPasswordForm = document.getElementById('forgotPasswordForm');
   var forgotFormEl = document.getElementById('forgotFormEl');
@@ -72,12 +72,27 @@
   var forgotSuccess = document.getElementById('forgotSuccess');
   var backToLoginLink = document.getElementById('backToLoginLink');
 
-  // Reset password elements
+  // OTP verify elements (Step 2)
+  var otpVerifyForm = document.getElementById('otpVerifyForm');
+  var otpFormEl = document.getElementById('otpFormEl');
+  var otpVerifyBtn = document.getElementById('otpVerifyBtn');
+  var otpError = document.getElementById('otpError');
+  var otpSuccess = document.getElementById('otpSuccess');
+  var otpCode = document.getElementById('otpCode');
+  var otpEmailDisplay = document.getElementById('otpEmailDisplay');
+  var resendCodeLink = document.getElementById('resendCodeLink');
+  var changeEmailLink = document.getElementById('changeEmailLink');
+
+  // Reset password elements (Step 3)
   var resetPasswordForm = document.getElementById('resetPasswordForm');
   var resetFormEl = document.getElementById('resetFormEl');
   var resetBtn = document.getElementById('resetBtn');
   var resetError = document.getElementById('resetError');
   var resetSuccess = document.getElementById('resetSuccess');
+
+  // State for reset flow
+  var resetEmail = '';
+  var resetGrantToken = '';
 
   // Verification elements
   var verificationBanner = document.getElementById('verificationBanner');
@@ -126,8 +141,9 @@
       loginError.classList.remove('visible');
       registerError.classList.remove('visible');
 
-      // Hide forgot/reset forms
+      // Hide forgot/reset/otp forms
       if (forgotPasswordForm) forgotPasswordForm.style.display = 'none';
+      if (otpVerifyForm) otpVerifyForm.style.display = 'none';
       if (resetPasswordForm) resetPasswordForm.style.display = 'none';
       if (loginFormEl) loginFormEl.style.display = '';
 
@@ -144,6 +160,8 @@
     forgotPasswordLink.addEventListener('click', function (e) {
       e.preventDefault();
       loginFormEl.style.display = 'none';
+      if (otpVerifyForm) otpVerifyForm.style.display = 'none';
+      if (resetPasswordForm) resetPasswordForm.style.display = 'none';
       forgotPasswordForm.style.display = '';
       forgotSuccess.style.display = 'none';
       hideError(forgotError);
@@ -154,6 +172,8 @@
     backToLoginLink.addEventListener('click', function (e) {
       e.preventDefault();
       forgotPasswordForm.style.display = 'none';
+      if (otpVerifyForm) otpVerifyForm.style.display = 'none';
+      if (resetPasswordForm) resetPasswordForm.style.display = 'none';
       loginFormEl.style.display = '';
     });
   }
@@ -181,29 +201,131 @@
         .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
         .then(function (result) {
           forgotBtn.disabled = false;
-          forgotBtn.textContent = 'SEND RESET LINK';
+          forgotBtn.textContent = 'SEND CODE';
           if (result.status === 200) {
-            forgotSuccess.textContent = 'If an account exists with that email, a reset link has been sent. Check your inbox.';
-            forgotSuccess.style.display = '';
-            forgotFormEl.reset();
+            // Save email and transition to OTP step
+            resetEmail = email;
+            forgotPasswordForm.style.display = 'none';
+            otpVerifyForm.style.display = '';
+            if (otpEmailDisplay) otpEmailDisplay.textContent = email;
+            if (otpCode) otpCode.value = '';
+            hideError(otpError);
+            otpSuccess.style.display = 'none';
           } else {
-            showError(forgotError, result.data.error || 'Failed to send reset link.');
+            showError(forgotError, result.data.error || 'Failed to send code.');
           }
         })
         .catch(function () {
           forgotBtn.disabled = false;
-          forgotBtn.textContent = 'SEND RESET LINK';
+          forgotBtn.textContent = 'SEND CODE';
           showError(forgotError, 'Network error. Please try again.');
         });
     });
   }
 
-  // ---- RESET PASSWORD ----
+  // ---- OTP CODE INPUT FILTER (digits only + auto-submit on 6 digits) ----
+  if (otpCode) {
+    otpCode.addEventListener('input', function () {
+      this.value = this.value.replace(/[^0-9]/g, '');
+      if (this.value.length === 6 && otpFormEl) {
+        otpFormEl.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    });
+  }
+
+  // ---- VERIFY OTP CODE (Step 2) ----
+  if (otpFormEl) {
+    otpFormEl.addEventListener('submit', function (e) {
+      e.preventDefault();
+      hideError(otpError);
+      if (otpSuccess) otpSuccess.style.display = 'none';
+
+      var code = otpCode.value.trim();
+      if (!code || code.length !== 6) {
+        showError(otpError, 'Please enter the 6-digit code.');
+        return;
+      }
+
+      otpVerifyBtn.disabled = true;
+      otpVerifyBtn.textContent = 'VERIFYING...';
+
+      fetch(API_BASE + '/verify-reset-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail, code: code })
+      })
+        .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+        .then(function (result) {
+          otpVerifyBtn.disabled = false;
+          otpVerifyBtn.textContent = 'VERIFY CODE';
+          if (result.status === 200 && result.data.grantToken) {
+            // Save grant token and transition to password step
+            resetGrantToken = result.data.grantToken;
+            otpVerifyForm.style.display = 'none';
+            resetPasswordForm.style.display = '';
+            hideError(resetError);
+            if (resetSuccess) resetSuccess.style.display = 'none';
+          } else {
+            showError(otpError, result.data.error || 'Verification failed.');
+          }
+        })
+        .catch(function () {
+          otpVerifyBtn.disabled = false;
+          otpVerifyBtn.textContent = 'VERIFY CODE';
+          showError(otpError, 'Network error. Please try again.');
+        });
+    });
+  }
+
+  // ---- RESEND CODE ----
+  if (resendCodeLink) {
+    resendCodeLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (!resetEmail) return;
+      hideError(otpError);
+
+      resendCodeLink.textContent = 'Sending...';
+      resendCodeLink.style.pointerEvents = 'none';
+
+      fetch(API_BASE + '/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail })
+      })
+        .then(function (res) { return res.json(); })
+        .then(function () {
+          resendCodeLink.textContent = 'Code Sent!';
+          if (otpCode) otpCode.value = '';
+          setTimeout(function () {
+            resendCodeLink.textContent = 'Resend Code';
+            resendCodeLink.style.pointerEvents = '';
+          }, 3000);
+        })
+        .catch(function () {
+          resendCodeLink.textContent = 'Resend Code';
+          resendCodeLink.style.pointerEvents = '';
+          showError(otpError, 'Failed to resend code. Please try again.');
+        });
+    });
+  }
+
+  // ---- CHANGE EMAIL (go back to Step 1) ----
+  if (changeEmailLink) {
+    changeEmailLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      otpVerifyForm.style.display = 'none';
+      forgotPasswordForm.style.display = '';
+      forgotSuccess.style.display = 'none';
+      hideError(forgotError);
+    });
+  }
+
+  // ---- RESET PASSWORD (Step 3) ----
   if (resetFormEl) {
     resetFormEl.addEventListener('submit', function (e) {
       e.preventDefault();
       hideError(resetError);
-      resetSuccess.style.display = 'none';
+      if (resetSuccess) resetSuccess.style.display = 'none';
 
       var password = document.getElementById('resetPassword').value;
       var confirm = document.getElementById('resetConfirm').value;
@@ -221,31 +343,26 @@
         return;
       }
 
-      var urlParams = new URLSearchParams(window.location.search);
-      var token = urlParams.get('reset');
-
       resetBtn.disabled = true;
       resetBtn.textContent = 'RESETTING...';
 
       fetch(API_BASE + '/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token, password: password })
+        body: JSON.stringify({ grantToken: resetGrantToken, password: password })
       })
         .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
         .then(function (result) {
           resetBtn.disabled = false;
           resetBtn.textContent = 'RESET PASSWORD';
-          if (result.status === 200) {
-            resetSuccess.textContent = 'Password reset successfully! You can now login with your new password.';
-            resetSuccess.style.display = '';
+          if (result.status === 200 && result.data.token) {
+            // Auto-login and redirect to shop
+            setToken(result.data.token);
+            setProfile(result.data.profile);
             resetFormEl.reset();
-            // Remove reset param from URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-            setTimeout(function () {
-              resetPasswordForm.style.display = 'none';
-              loginFormEl.style.display = '';
-            }, 3000);
+            resetGrantToken = '';
+            resetEmail = '';
+            window.location.href = 'shop.html';
           } else {
             showError(resetError, result.data.error || 'Failed to reset password.');
           }
@@ -811,17 +928,8 @@
 
   // ---- INITIALIZE ----
   function init() {
-    // Check for URL params (reset token, verify token)
+    // Check for URL params (verify token only — reset is now OTP-based)
     var urlParams = new URLSearchParams(window.location.search);
-
-    // Handle password reset link
-    if (urlParams.get('reset')) {
-      loginFormEl.style.display = 'none';
-      if (forgotPasswordForm) forgotPasswordForm.style.display = 'none';
-      if (resetPasswordForm) resetPasswordForm.style.display = '';
-      showLogin();
-      return;
-    }
 
     // Handle email verification link
     if (urlParams.get('verify')) {
