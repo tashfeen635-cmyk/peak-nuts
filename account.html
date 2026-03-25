@@ -393,6 +393,7 @@
           </div>
         </div>
         <div class="special-actions">
+          <button class="btn btn-primary btn-order-now" id="modalOrderBtn">ORDER NOW</button>
           <button class="btn btn-outline" id="modalCloseBtn">GO BACK</button>
         </div>
       </div>
@@ -418,6 +419,62 @@
       <polyline points="18 15 12 9 6 15"></polyline>
     </svg>
   </button>
+
+  <!-- ========== ORDER NOW POPUP ========== -->
+  <div class="order-popup-overlay" id="orderPopupOverlay"></div>
+  <div class="order-popup" id="orderPopup">
+    <button class="order-popup-close" id="orderPopupClose" aria-label="Close">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <h3 class="order-popup-title">Place Your Order</h3>
+    <p class="order-popup-product" id="orderProductName"></p>
+    <form id="orderForm">
+      <div class="order-form-row">
+        <div class="order-form-group">
+          <label for="orderFirstName">First Name *</label>
+          <input type="text" id="orderFirstName" required placeholder="First name">
+        </div>
+        <div class="order-form-group">
+          <label for="orderLastName">Last Name *</label>
+          <input type="text" id="orderLastName" required placeholder="Last name">
+        </div>
+      </div>
+      <div class="order-form-group">
+        <label for="orderEmail">Email *</label>
+        <input type="email" id="orderEmail" required placeholder="your@email.com">
+      </div>
+      <div class="order-form-group">
+        <label for="orderPhone">Mobile Number *</label>
+        <input type="tel" id="orderPhone" required placeholder="e.g. 0300-1234567">
+      </div>
+      <div class="order-form-group">
+        <label for="orderCity">City *</label>
+        <input type="text" id="orderCity" required placeholder="e.g. Lahore">
+      </div>
+      <div class="order-form-group">
+        <label for="orderAddress">Address *</label>
+        <textarea id="orderAddress" required placeholder="Full delivery address" rows="2"></textarea>
+      </div>
+      <div class="order-form-group">
+        <label for="orderPostcode">Postcode / ZIP *</label>
+        <input type="text" id="orderPostcode" required placeholder="e.g. 54000">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" id="orderSubmitBtn">SUBMIT ORDER</button>
+    </form>
+    <div class="order-popup-success" id="orderSuccess" style="display:none;">
+      <div class="order-success-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <h4>Order Submitted!</h4>
+      <p>We'll contact you shortly to confirm your order.</p>
+    </div>
+  </div>
 
   <script src="script.js"></script>
   <script src="account.js"></script>
