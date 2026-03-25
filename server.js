@@ -520,7 +520,19 @@ app.post('/api/seed', requireAuth, (req, res) => {
 app.get('/api/products', (req, res) => {
   try {
     const rows = db.prepare('SELECT * FROM products').all();
-    res.json(rows);
+    // Aggregate real review stats per product
+    const reviewStats = db.prepare('SELECT productId, AVG(rating) as avg, COUNT(*) as count FROM reviews GROUP BY productId').all();
+    var statsMap = {};
+    for (var i = 0; i < reviewStats.length; i++) {
+      statsMap[reviewStats[i].productId] = reviewStats[i];
+    }
+    var result = rows.map(function (p) {
+      var stat = statsMap[p.id];
+      p.reviewAvg = stat ? Math.round(stat.avg * 10) / 10 : null;
+      p.reviewCount = stat ? stat.count : 0;
+      return p;
+    });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -897,9 +909,29 @@ app.delete('/api/user/wishlist/:productId', requireUser, (req, res) => {
 // ---- Reviews Endpoints ----
 app.get('/api/reviews/:productId', (req, res) => {
   try {
-    var rows = db.prepare('SELECT r.id, r.rating, r.comment, r.createdAt, u.name as userName FROM reviews r JOIN users u ON r.userId = u.id WHERE r.productId=? ORDER BY r.createdAt DESC').all(req.params.productId);
+    // Optional user identification for pre-filling existing review
+    var currentUserId = null;
+    var authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      var tokenData = activeUserTokens[authHeader.slice(7)];
+      if (tokenData && Date.now() - tokenData.createdAt <= 24 * 60 * 60 * 1000) {
+        currentUserId = tokenData.userId;
+      }
+    }
+    var rows = db.prepare('SELECT r.id, r.rating, r.comment, r.createdAt, r.userId, u.name as userName FROM reviews r JOIN users u ON r.userId = u.id WHERE r.productId=? ORDER BY r.createdAt DESC').all(req.params.productId);
     var avg = db.prepare('SELECT AVG(rating) as avgRating, COUNT(*) as count FROM reviews WHERE productId=?').get(req.params.productId);
-    res.json({ reviews: rows, avgRating: avg.avgRating ? Math.round(avg.avgRating * 10) / 10 : null, count: avg.count });
+    var userReview = null;
+    if (currentUserId) {
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].userId === currentUserId) {
+          userReview = { rating: rows[i].rating, comment: rows[i].comment };
+          break;
+        }
+      }
+    }
+    // Remove userId from response
+    var reviews = rows.map(function (r) { return { id: r.id, rating: r.rating, comment: r.comment, createdAt: r.createdAt, userName: r.userName }; });
+    res.json({ reviews: reviews, avgRating: avg.avgRating ? Math.round(avg.avgRating * 10) / 10 : null, count: avg.count, userReview: userReview });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

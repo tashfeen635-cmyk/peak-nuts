@@ -972,26 +972,39 @@ app.delete('/api/user/wishlist/:productId', requireUser, async (req, res) => {
 app.get('/api/reviews/:productId', async (req, res) => {
   try {
     await connectDB();
+    // Optional user identification for pre-filling existing review
+    var currentUserId = null;
+    var authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      var found = await UserToken.findOne({ token: authHeader.slice(7) });
+      if (found) currentUserId = found.userId.toString();
+    }
     var reviews = await Review.find({ productId: req.params.productId }).sort({ createdAt: -1 });
-    // Populate user names
+    // Batch-fetch all user names in one query
+    var userIds = reviews.map(function (r) { return r.userId; });
+    var users = await User.find({ _id: { $in: userIds } });
+    var userMap = {};
+    for (var u = 0; u < users.length; u++) {
+      userMap[users[u]._id.toString()] = users[u].name;
+    }
     var result = [];
+    var totalRating = 0;
+    var userReview = null;
     for (var i = 0; i < reviews.length; i++) {
-      var user = await User.findById(reviews[i].userId);
+      totalRating += reviews[i].rating;
       result.push({
         _id: reviews[i]._id,
         rating: reviews[i].rating,
         comment: reviews[i].comment,
         createdAt: reviews[i].createdAt,
-        userName: user ? user.name : 'Unknown'
+        userName: userMap[reviews[i].userId.toString()] || 'Unknown'
       });
-    }
-    // Calculate average
-    var totalRating = 0;
-    for (var j = 0; j < reviews.length; j++) {
-      totalRating += reviews[j].rating;
+      if (currentUserId && reviews[i].userId.toString() === currentUserId) {
+        userReview = { rating: reviews[i].rating, comment: reviews[i].comment };
+      }
     }
     var avgRating = reviews.length > 0 ? Math.round((totalRating / reviews.length) * 10) / 10 : null;
-    res.json({ reviews: result, avgRating: avgRating, count: reviews.length });
+    res.json({ reviews: result, avgRating: avgRating, count: reviews.length, userReview: userReview });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1023,20 +1036,25 @@ app.get('/api/admin/reviews', requireAuth, async (req, res) => {
   try {
     await connectDB();
     var reviews = await Review.find().sort({ createdAt: -1 });
-    var result = [];
-    for (var i = 0; i < reviews.length; i++) {
-      var r = reviews[i];
-      var user = await User.findById(r.userId);
-      var product = await Product.findById(r.productId);
-      result.push({
+    // Batch-fetch all users and products in two queries
+    var userIds = reviews.map(function (r) { return r.userId; });
+    var productIds = reviews.map(function (r) { return r.productId; });
+    var users = await User.find({ _id: { $in: userIds } });
+    var products = await Product.find({ _id: { $in: productIds } });
+    var userMap = {};
+    for (var u = 0; u < users.length; u++) userMap[users[u]._id.toString()] = users[u].name;
+    var productMap = {};
+    for (var p = 0; p < products.length; p++) productMap[products[p]._id.toString()] = products[p].name;
+    var result = reviews.map(function (r) {
+      return {
         _id: r._id,
-        productName: product ? product.name : 'Deleted Product',
-        userName: user ? user.name : 'Unknown',
+        productName: productMap[r.productId.toString()] || 'Deleted Product',
+        userName: userMap[r.userId.toString()] || 'Unknown',
         rating: r.rating,
         comment: r.comment,
         createdAt: r.createdAt
-      });
-    }
+      };
+    });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });

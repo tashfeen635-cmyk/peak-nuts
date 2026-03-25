@@ -550,7 +550,9 @@
   }
 
   function buildStars(rating) {
-    var r = parseInt(rating) || 5;
+    var r = Math.round(parseFloat(rating)) || 5;
+    if (r < 1) r = 1;
+    if (r > 5) r = 5;
     var html = '';
     for (var i = 0; i < 5; i++) {
       html += i < r ? '&#9733;' : '&#9734;';
@@ -908,7 +910,7 @@
     document.getElementById('modalProductPrice').textContent = 'Rs.' + product.price.toFixed(2);
 
     // Stars
-    document.getElementById('modalProductStars').innerHTML = buildStars(product.rating);
+    document.getElementById('modalProductStars').innerHTML = buildStars(product.reviewAvg != null ? product.reviewAvg : product.rating);
 
     // Stock
     var stockEl = document.getElementById('modalProductStock');
@@ -971,7 +973,10 @@
     reviewsDiv.innerHTML = '<p style="color:#999;font-size:13px;">Loading reviews...</p>';
     modalContent.appendChild(reviewsDiv);
 
-    fetch(API_BASE + '/reviews/' + productId)
+    var token = localStorage.getItem('peaknuts_user_token');
+    var headers = {};
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    fetch(API_BASE + '/reviews/' + productId, { headers: headers })
       .then(function (res) { return res.json(); })
       .then(function (data) {
         renderReviews(reviewsDiv, data, productId);
@@ -987,6 +992,8 @@
     var count = data.count || 0;
     var token = localStorage.getItem('peaknuts_user_token');
 
+    var userReview = data.userReview || null;
+
     var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
       '<h3 style="font-family:Georgia,serif;font-size:18px;margin:0;">Reviews' + (count > 0 ? ' (' + count + ')' : '') + '</h3>' +
       (avgRating ? '<span style="font-size:14px;color:#8B9A46;font-weight:600;">' + avgRating + ' / 5 avg</span>' : '') +
@@ -995,14 +1002,18 @@
     // Review form (only for logged-in users)
     if (token) {
       html += '<div style="background:#f9f8f5;padding:16px;border-radius:8px;margin-bottom:16px;">' +
-        '<div style="margin-bottom:8px;font-size:13px;font-weight:600;">Write a Review</div>' +
+        '<div style="margin-bottom:8px;font-size:13px;font-weight:600;">' + (userReview ? 'Update Your Review' : 'Write a Review') + '</div>' +
         '<div id="reviewStars" style="margin-bottom:8px;">';
       for (var s = 1; s <= 5; s++) {
-        html += '<span class="review-star" data-star="' + s + '" style="cursor:pointer;font-size:22px;color:#ddd;transition:color 0.2s;">&#9733;</span>';
+        var starColor = userReview && s <= userReview.rating ? '#8B9A46' : '#ddd';
+        html += '<span class="review-star" data-star="' + s + '" style="cursor:pointer;font-size:22px;color:' + starColor + ';transition:color 0.2s;">&#9733;</span>';
       }
       html += '</div>' +
-        '<textarea id="reviewComment" placeholder="Share your experience..." style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;resize:vertical;min-height:60px;box-sizing:border-box;font-family:inherit;"></textarea>' +
-        '<button id="submitReviewBtn" style="margin-top:8px;background:#1a1a1a;color:#fff;border:none;padding:10px 24px;border-radius:4px;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;">SUBMIT REVIEW</button>' +
+        '<textarea id="reviewComment" placeholder="Share your experience..." style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:13px;resize:vertical;min-height:60px;box-sizing:border-box;font-family:inherit;">' + (userReview ? escapeHtml(userReview.comment) : '') + '</textarea>' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-top:8px;">' +
+        '<button id="submitReviewBtn" style="background:#1a1a1a;color:#fff;border:none;padding:10px 24px;border-radius:4px;font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;">' + (userReview ? 'UPDATE REVIEW' : 'SUBMIT REVIEW') + '</button>' +
+        '<span id="reviewFeedback" style="font-size:12px;display:none;"></span>' +
+        '</div>' +
         '</div>';
     }
 
@@ -1031,7 +1042,7 @@
     container.innerHTML = html;
 
     // Star rating interaction
-    var selectedRating = 0;
+    var selectedRating = userReview ? userReview.rating : 0;
     var starEls = container.querySelectorAll('.review-star');
     starEls.forEach(function (star) {
       star.addEventListener('mouseenter', function () {
@@ -1063,20 +1074,34 @@
         this.textContent = 'SUBMITTING...';
         var self = this;
 
+        var feedbackEl = container.querySelector('#reviewFeedback');
         fetch(API_BASE + '/reviews/' + productId, {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
           body: JSON.stringify({ rating: selectedRating, comment: comment })
         })
-          .then(function (res) { return res.json(); })
-          .then(function () {
+          .then(function (res) {
+            if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || 'Failed to submit review'); });
+            return res.json();
+          })
+          .then(function (data) {
+            if (feedbackEl) {
+              feedbackEl.style.display = '';
+              feedbackEl.style.color = '#8B9A46';
+              feedbackEl.textContent = data.message || 'Review saved!';
+            }
             self.disabled = false;
-            self.textContent = 'SUBMIT REVIEW';
+            self.textContent = 'UPDATE REVIEW';
             loadProductReviews(productId);
           })
-          .catch(function () {
+          .catch(function (err) {
             self.disabled = false;
-            self.textContent = 'SUBMIT REVIEW';
+            self.textContent = userReview ? 'UPDATE REVIEW' : 'SUBMIT REVIEW';
+            if (feedbackEl) {
+              feedbackEl.style.display = '';
+              feedbackEl.style.color = '#d32f2f';
+              feedbackEl.textContent = err.message || 'Failed to submit. Please try again.';
+            }
           });
       });
     }
