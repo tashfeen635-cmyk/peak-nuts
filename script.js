@@ -13,48 +13,8 @@
   const searchToggle = document.getElementById('searchToggle');
   const searchOverlay = document.getElementById('searchOverlay');
   const searchClose = document.getElementById('searchClose');
-  const cartToggle = document.getElementById('cartToggle');
-  const cartDrawer = document.getElementById('cartDrawer');
-  const cartOverlay = document.getElementById('cartOverlay');
-  const cartClose = document.getElementById('cartClose');
-  const cartBody = document.getElementById('cartBody');
-  const cartFooter = document.getElementById('cartFooter');
-  const cartSubtotal = document.getElementById('cartSubtotal');
-  const cartShipping = document.getElementById('cartShipping');
-  const cartTotal = document.getElementById('cartTotal');
-  const cartCount = document.querySelector('.cart-count');
   const backToTop = document.getElementById('backToTop');
   const newsletterForm = document.getElementById('newsletterForm');
-
-  // ---- Cart State (persisted in localStorage) ----
-  let cart = [];
-  try {
-    var saved = localStorage.getItem('peaknuts_cart');
-    if (saved) {
-      cart = JSON.parse(saved);
-      // Migration: ensure every item has a qty field
-      for (var i = 0; i < cart.length; i++) {
-        if (!cart[i].qty) cart[i].qty = 1;
-      }
-    }
-  } catch (e) {}
-
-  function saveCart() {
-    try { localStorage.setItem('peaknuts_cart', JSON.stringify(cart)); } catch (e) {}
-  }
-
-  // Shared add-to-cart: deduplicates by name, increments qty
-  function addToCart(name, price, image) {
-    for (var i = 0; i < cart.length; i++) {
-      if (cart[i].name === name) {
-        cart[i].qty++;
-        updateCartUI();
-        return;
-      }
-    }
-    cart.push({ name: name, price: price, image: image, qty: 1 });
-    updateCartUI();
-  }
 
   // ---- Header Scroll Effect ----
   function handleScroll() {
@@ -143,7 +103,6 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       closeSearch();
-      closeCart();
     }
   });
 
@@ -207,9 +166,6 @@
       var p = results[i];
       var name = escapeHtml(p.name);
       var imgSrc = escapeHtml(p.image || '');
-      var isOut = p.stock === 'Out of Stock';
-      var btnText = isOut ? 'OUT OF STOCK' : 'ADD TO CART';
-      var btnDisabled = isOut ? ' disabled' : '';
 
       html += '<div class="search-result-item" data-search-idx="' + i + '">' +
         '<img class="search-result-img" src="' + imgSrc + '" alt="' + name + '" loading="lazy">' +
@@ -220,7 +176,6 @@
           '</div>' +
         '</div>' +
         '<span class="search-result-price">Rs.' + p.price.toFixed(2) + '</span>' +
-        '<button class="search-result-btn" data-product="' + name + '" data-price="' + p.price + '" data-img="' + imgSrc + '"' + btnDisabled + '>' + btnText + '</button>' +
       '</div>';
     }
 
@@ -229,119 +184,11 @@
     // Attach click handler to open product detail modal
     searchResults.querySelectorAll('.search-result-item').forEach(function (item, idx) {
       item.addEventListener('click', function (e) {
-        // Don't open modal if clicking the Add to Cart button
-        if (e.target.closest('.search-result-btn')) return;
         var product = results[idx];
         if (product) {
           closeSearch();
           openProductModal(product);
         }
-      });
-    });
-
-    // Attach add-to-cart handlers on search result buttons
-    searchResults.querySelectorAll('.search-result-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (this.disabled) return;
-        addToCart(this.getAttribute('data-product'), parseFloat(this.getAttribute('data-price')), this.getAttribute('data-img'));
-
-        // Button feedback
-        var original = this.textContent;
-        this.textContent = 'ADDED!';
-        this.style.background = '#c48fa2';
-        var self = this;
-        setTimeout(function () {
-          self.textContent = original;
-          self.style.background = '';
-        }, 1200);
-      });
-    });
-  }
-
-  // ---- Cart Drawer ----
-  function openCart() {
-    cartDrawer.classList.add('active');
-    cartOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeCart() {
-    cartDrawer.classList.remove('active');
-    cartOverlay.classList.remove('active');
-    document.body.style.overflow = '';
-  }
-
-  cartToggle.addEventListener('click', openCart);
-  cartClose.addEventListener('click', closeCart);
-  cartOverlay.addEventListener('click', closeCart);
-
-  // ---- Add to Cart ----
-  function updateCartUI() {
-    saveCart();
-
-    // Cart count = sum of all quantities
-    var totalQty = 0;
-    for (var q = 0; q < cart.length; q++) totalQty += cart[q].qty;
-    cartCount.textContent = totalQty;
-
-    if (cart.length === 0) {
-      cartBody.innerHTML = '<p class="cart-empty">Your cart is empty.</p>';
-      cartFooter.style.display = 'none';
-      return;
-    }
-
-    var total = 0;
-    var html = '';
-
-    cart.forEach(function (item, index) {
-      var lineTotal = item.price * item.qty;
-      total += lineTotal;
-      html += '<div class="cart-item">' +
-        '<div class="cart-item-img">' +
-        '<img src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.name) + '" loading="lazy">' +
-        '</div>' +
-        '<div class="cart-item-info">' +
-        '<div class="cart-item-name">' + escapeHtml(item.name) + '</div>' +
-        '<div class="cart-item-qty">' +
-          '<button data-action="dec" data-index="' + index + '">&#8722;</button>' +
-          '<span>' + item.qty + '</span>' +
-          '<button data-action="inc" data-index="' + index + '">&#43;</button>' +
-        '</div>' +
-        '<div class="cart-item-price">Rs.' + lineTotal.toFixed(2) + '</div>' +
-        '<button class="cart-item-remove" data-index="' + index + '">Remove</button>' +
-        '</div>' +
-        '</div>';
-    });
-
-    cartBody.innerHTML = html;
-    var shipping = total >= 5933 ? 0 : 5;
-    cartSubtotal.textContent = 'Rs.' + total.toFixed(2);
-    cartShipping.textContent = shipping === 0 ? 'FREE' : 'Rs.' + shipping.toFixed(2);
-    cartTotal.textContent = 'Rs.' + (total + shipping).toFixed(2);
-    cartFooter.style.display = 'block';
-
-    // Attach qty +/- handlers
-    cartBody.querySelectorAll('.cart-item-qty button').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx = parseInt(this.getAttribute('data-index'));
-        var action = this.getAttribute('data-action');
-        if (action === 'inc') {
-          cart[idx].qty++;
-        } else {
-          cart[idx].qty--;
-          if (cart[idx].qty <= 0) cart.splice(idx, 1);
-        }
-        updateCartUI();
-      });
-    });
-
-    // Attach remove handlers
-    cartBody.querySelectorAll('.cart-item-remove').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx = parseInt(this.getAttribute('data-index'));
-        cart.splice(idx, 1);
-        updateCartUI();
       });
     });
   }
@@ -410,30 +257,6 @@
       })
       .catch(function () {});
   }
-
-  // Add to cart buttons for special product sections (static HTML)
-  document.querySelectorAll('.special-product .btn-add-cart').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var name = this.getAttribute('data-product');
-      var price = parseFloat(this.getAttribute('data-price'));
-      var section = this.closest('.special-product');
-      var img = section ? section.querySelector('.special-img-wrapper img') : null;
-      var imageSrc = img ? img.getAttribute('src') : '';
-
-      addToCart(name, price, imageSrc);
-      openCart();
-
-      // Button feedback
-      var original = this.textContent;
-      this.textContent = 'ADDED!';
-      this.style.background = '#c48fa2';
-      var self = this;
-      setTimeout(function () {
-        self.textContent = original;
-        self.style.background = '';
-      }, 1200);
-    });
-  });
 
   // ---- Back to Top ----
   if (backToTop) {
@@ -593,21 +416,12 @@
     var id = p._id || p.id;
     var imgSrc = escapeHtml(p.image || '');
     var name = escapeHtml(p.name);
-    var isOutOfStock = p.stock === 'Out of Stock';
 
     // Badge
     var badgeHtml = '';
     if (p.badge) {
       var badgeClass = p.badge.toLowerCase();
       badgeHtml = '<span class="product-badge ' + badgeClass + '">' + escapeHtml(p.badge) + '</span>';
-    }
-
-    // Button
-    var btnHtml = '';
-    if (isOutOfStock) {
-      btnHtml = '<button class="btn-add-cart" data-product="' + name + '" data-price="' + p.price + '" disabled style="opacity:0.5;cursor:not-allowed">OUT OF STOCK</button>';
-    } else {
-      btnHtml = '<button class="btn-add-cart" data-product="' + name + '" data-price="' + p.price + '">ADD TO CART</button>';
     }
 
     // Urdu name
@@ -637,7 +451,6 @@
     return '<div class="product-card">' +
       '<div class="product-img" style="position:relative;">' +
         '<img src="' + imgSrc + '" alt="' + name + '" loading="lazy">' +
-        '<div class="product-actions">' + btnHtml + '</div>' +
         badgeHtml +
         heartHtml +
       '</div>' +
@@ -651,43 +464,18 @@
     '</div>';
   }
 
-  // ---- Attach cart handlers to dynamically created buttons ----
-  function attachCartHandlers(container) {
-    container.querySelectorAll('.btn-add-cart').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (this.disabled) return;
-        var card = this.closest('.product-card');
-        var img = card ? card.querySelector('.product-img img') : null;
-        var imageSrc = img ? img.getAttribute('src') : '';
-
-        addToCart(this.getAttribute('data-product'), parseFloat(this.getAttribute('data-price')), imageSrc);
-        openCart();
-
-        var original = this.textContent;
-        this.textContent = 'ADDED!';
-        this.style.background = '#c48fa2';
-        var self = this;
-        setTimeout(function () {
-          self.textContent = original;
-          self.style.background = '';
-        }, 1200);
-      });
-    });
-  }
-
   // ---- Sync special product sections (Shilajit, Tumoro hero sections) ----
   function syncSpecialProducts(productMap) {
     document.querySelectorAll('.special-product').forEach(function (section) {
-      var btn = section.querySelector('.btn-add-cart');
-      if (!btn) return;
-      var productName = btn.getAttribute('data-product');
+      var titleEl = section.querySelector('.special-title');
+      if (!titleEl) return;
+      var productName = titleEl.textContent.trim();
       var dbProduct = productMap[productName];
 
       if (!dbProduct) {
         section.style.display = 'none';
       } else {
         section.style.display = '';
-        btn.setAttribute('data-price', dbProduct.price);
         var priceCurrentEl = section.querySelector('.special-price-current');
         if (priceCurrentEl) {
           priceCurrentEl.textContent = 'Rs.' + dbProduct.price.toFixed(2);
@@ -743,7 +531,6 @@
               html += buildProductCardHTML(items[i]);
             }
             grid.innerHTML = html;
-            attachCartHandlers(grid);
             attachProductClickHandlers(grid);
           }
         }
@@ -846,9 +633,6 @@
       var p = results[i];
       var name = escapeHtml(p.name);
       var imgSrc = escapeHtml(p.image || '');
-      var isOut = p.stock === 'Out of Stock';
-      var btnText = isOut ? 'OUT OF STOCK' : 'ADD TO CART';
-      var btnDisabled = isOut ? ' disabled' : '';
 
       html += '<div class="search-result-item">' +
         '<img class="search-result-img" src="' + imgSrc + '" alt="' + name + '" loading="lazy">' +
@@ -859,7 +643,6 @@
           '</div>' +
         '</div>' +
         '<span class="search-result-price">Rs.' + p.price.toFixed(2) + '</span>' +
-        '<button class="search-result-btn" data-product="' + name + '" data-price="' + p.price + '" data-img="' + imgSrc + '"' + btnDisabled + '>' + btnText + '</button>' +
       '</div>';
     }
 
@@ -869,7 +652,6 @@
     // Attach click handler to open product detail modal
     inlineSearchResults.querySelectorAll('.search-result-item').forEach(function (item, idx) {
       item.addEventListener('click', function (e) {
-        if (e.target.closest('.search-result-btn')) return;
         var product = results[idx];
         if (product) {
           inlineSearchResults.innerHTML = '';
@@ -877,24 +659,6 @@
           inlineSearchInput.value = '';
           openProductModal(product);
         }
-      });
-    });
-
-    // Attach add-to-cart
-    inlineSearchResults.querySelectorAll('.search-result-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (this.disabled) return;
-        addToCart(this.getAttribute('data-product'), parseFloat(this.getAttribute('data-price')), this.getAttribute('data-img'));
-
-        var original = this.textContent;
-        this.textContent = 'ADDED!';
-        this.style.background = '#c48fa2';
-        var self = this;
-        setTimeout(function () {
-          self.textContent = original;
-          self.style.background = '';
-        }, 1200);
       });
     });
   }
@@ -961,23 +725,6 @@
       '</div>';
     }
     benefitsEl.innerHTML = benefitsHtml;
-
-    // Add to cart button
-    var addBtn = document.getElementById('modalAddToCart');
-    addBtn.setAttribute('data-product', product.name);
-    addBtn.setAttribute('data-price', product.price);
-    addBtn.disabled = product.stock === 'Out of Stock';
-    addBtn.textContent = product.stock === 'Out of Stock' ? 'OUT OF STOCK' : 'ADD TO CART';
-    if (product.stock === 'Out of Stock') {
-      addBtn.style.opacity = '0.5';
-      addBtn.style.cursor = 'not-allowed';
-    } else {
-      addBtn.style.opacity = '';
-      addBtn.style.cursor = '';
-    }
-
-    // Store image for cart
-    addBtn.setAttribute('data-img', product.image || '');
 
     // Load and show reviews
     var productId = product._id || product.id;
@@ -1198,28 +945,10 @@
     }
   });
 
-  // Modal add to cart handler
-  document.getElementById('modalAddToCart').addEventListener('click', function () {
-    if (this.disabled) return;
-    addToCart(this.getAttribute('data-product'), parseFloat(this.getAttribute('data-price')), this.getAttribute('data-img'));
-
-    var original = this.textContent;
-    this.textContent = 'ADDED!';
-    this.style.background = '#c48fa2';
-    var self = this;
-    setTimeout(function () {
-      self.textContent = original;
-      self.style.background = '';
-    }, 1200);
-  });
-
   // Attach product card click handlers
   function attachProductClickHandlers(container) {
     container.querySelectorAll('.product-card').forEach(function (card) {
       card.addEventListener('click', function (e) {
-        // Don't open modal if clicking the Add to Cart button
-        if (e.target.closest('.btn-add-cart')) return;
-
         var productName = '';
         var nameEl = card.querySelector('.product-name');
         if (nameEl) productName = nameEl.textContent.trim();
@@ -1239,163 +968,6 @@
       });
     });
   }
-
-  // ---- Checkout ----
-  var checkoutSection = document.getElementById('checkoutSection');
-  var checkoutBtn = document.getElementById('checkoutBtn');
-  var checkoutBack = document.getElementById('checkoutBack');
-  var checkoutForm = document.getElementById('checkoutForm');
-  var checkoutItems = document.getElementById('checkoutItems');
-  var checkoutSubtotalEl = document.getElementById('checkoutSubtotal');
-  var checkoutShippingEl = document.getElementById('checkoutShipping');
-  var checkoutTotalEl = document.getElementById('checkoutTotal');
-  var checkoutSuccess = document.getElementById('checkoutSuccess');
-  var successOrderId = document.getElementById('successOrderId');
-  var backToShopBtn = document.getElementById('backToShopBtn');
-  var placeOrderBtn = document.getElementById('placeOrderBtn');
-
-  function openCheckout() {
-    if (cart.length === 0) return;
-    closeCart();
-    populateCheckoutSummary();
-
-    // Auto-fill checkout from user profile if logged in
-    try {
-      var profileData = localStorage.getItem('peaknuts_user_profile');
-      if (profileData) {
-        var profile = JSON.parse(profileData);
-        var nameField = document.getElementById('checkoutName');
-        var emailField = document.getElementById('checkoutEmail');
-        var phoneField = document.getElementById('checkoutPhone');
-        var cityField = document.getElementById('checkoutCity');
-        var addressField = document.getElementById('checkoutAddress');
-        if (profile.name && nameField && !nameField.value) nameField.value = profile.name;
-        if (profile.email && emailField && !emailField.value) emailField.value = profile.email;
-        if (profile.phone && phoneField && !phoneField.value) phoneField.value = profile.phone;
-        if (profile.city && cityField && !cityField.value) cityField.value = profile.city;
-        if (profile.address && addressField && !addressField.value) addressField.value = profile.address;
-      }
-    } catch (e) {}
-
-    checkoutSection.style.display = 'block';
-    checkoutSuccess.style.display = 'none';
-    document.body.style.overflow = 'hidden';
-    window.scrollTo(0, 0);
-  }
-
-  function closeCheckout() {
-    checkoutSection.style.display = 'none';
-    document.body.style.overflow = '';
-    checkoutForm.reset();
-  }
-
-  function populateCheckoutSummary() {
-    var html = '';
-    var total = 0;
-    for (var i = 0; i < cart.length; i++) {
-      var item = cart[i];
-      var lineTotal = item.price * item.qty;
-      total += lineTotal;
-      html += '<div class="checkout-item">' +
-        '<img class="checkout-item-img" src="' + escapeHtml(item.image) + '" alt="' + escapeHtml(item.name) + '" loading="lazy">' +
-        '<div class="checkout-item-info">' +
-          '<div class="checkout-item-name">' + escapeHtml(item.name) + '</div>' +
-          '<div class="checkout-item-qty">Qty: ' + item.qty + ' x Rs.' + item.price.toFixed(2) + '</div>' +
-        '</div>' +
-        '<div class="checkout-item-price">Rs.' + lineTotal.toFixed(2) + '</div>' +
-      '</div>';
-    }
-    checkoutItems.innerHTML = html;
-    var shipping = total >= 5933 ? 0 : 5;
-    checkoutSubtotalEl.textContent = 'Rs.' + total.toFixed(2);
-    checkoutShippingEl.textContent = shipping === 0 ? 'FREE' : 'Rs.' + shipping.toFixed(2);
-    checkoutTotalEl.textContent = 'Rs.' + (total + shipping).toFixed(2);
-  }
-
-  function buildOrderItems() {
-    var items = [];
-    for (var i = 0; i < cart.length; i++) {
-      items.push({ name: cart[i].name, qty: cart[i].qty, price: cart[i].price });
-    }
-    return items;
-  }
-
-  checkoutBtn.addEventListener('click', function (e) {
-    e.preventDefault();
-    openCheckout();
-  });
-
-  checkoutBack.addEventListener('click', function () {
-    closeCheckout();
-  });
-
-  checkoutForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var name = document.getElementById('checkoutName').value.trim();
-    var email = document.getElementById('checkoutEmail').value.trim();
-    var phone = document.getElementById('checkoutPhone').value.trim();
-    var city = document.getElementById('checkoutCity').value.trim();
-    var address = document.getElementById('checkoutAddress').value.trim();
-
-    if (!name || !email || !phone || !city || !address) return;
-
-    placeOrderBtn.disabled = true;
-    placeOrderBtn.textContent = 'PLACING ORDER...';
-
-    var orderData = {
-      customer: name,
-      email: email,
-      phone: phone,
-      city: city,
-      address: address,
-      items: buildOrderItems()
-    };
-
-    fetch(API_BASE + '/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData)
-    })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        // Clear cart
-        cart = [];
-        updateCartUI();
-
-        // Show success
-        successOrderId.textContent = 'Order ID: ' + (data.orderId || 'Confirmed');
-        checkoutSuccess.style.display = 'flex';
-
-        placeOrderBtn.disabled = false;
-        placeOrderBtn.textContent = 'PLACE ORDER (Cash on Delivery)';
-      })
-      .catch(function () {
-        placeOrderBtn.disabled = false;
-        placeOrderBtn.textContent = 'PLACE ORDER (Cash on Delivery)';
-        alert('Failed to place order. Please try again.');
-      });
-  });
-
-  backToShopBtn.addEventListener('click', function () {
-    closeCheckout();
-    var path = window.location.pathname;
-    if (path.indexOf('shop') !== -1 || path === '/' || path.indexOf('index') !== -1) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      window.location.href = 'shop.html';
-    }
-  });
-
-  // Close checkout on Escape
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && checkoutSection.style.display === 'block') {
-      if (checkoutSuccess.style.display === 'flex') {
-        closeCheckout();
-      } else {
-        closeCheckout();
-      }
-    }
-  });
 
   // ---- Learn More Buttons ----
   function attachLearnMoreHandlers() {
@@ -1575,7 +1147,6 @@
       html += buildProductCardHTML(pageProducts[i]);
     }
     shopPaginatedGrid.innerHTML = html;
-    attachCartHandlers(shopPaginatedGrid);
     attachProductClickHandlers(shopPaginatedGrid);
     attachWishlistHandlers(shopPaginatedGrid);
     loadUserWishlist();
@@ -1678,7 +1249,6 @@
             html += buildProductCardHTML(items[i]);
           }
           grid.innerHTML = html;
-          attachCartHandlers(grid);
           attachProductClickHandlers(grid);
         }
       }
@@ -1690,20 +1260,11 @@
   if (filterRating) filterRating.addEventListener('change', applyFiltersAndSort);
   if (sortBy) sortBy.addEventListener('change', applyFiltersAndSort);
 
-  // ---- WISHLIST EVENT LISTENER (for account page add-to-cart) ----
-  window.addEventListener('peaknuts-add-to-cart', function (e) {
-    if (e.detail) {
-      addToCart(e.detail.name, e.detail.price, e.detail.image);
-      openCart();
-    }
-  });
-
   // ---- Initialize ----
   document.addEventListener('DOMContentLoaded', function () {
     initScrollAnimations();
     handleScroll();
     renderSectionProducts();
-    updateCartUI();
     attachLearnMoreHandlers();
   });
 
@@ -1712,7 +1273,6 @@
     initScrollAnimations();
     handleScroll();
     renderSectionProducts();
-    updateCartUI();
     attachLearnMoreHandlers();
   }
 
