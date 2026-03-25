@@ -1098,6 +1098,20 @@ button {
   transform: translateY(0);
 }
 
+.btn-card-order {
+  padding: 12px 20px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  border-radius: 0;
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-card-order:hover {
+  background: var(--black);
+  border-color: var(--black);
+}
+
 .product-badge {
   position: absolute;
   top: 15px;

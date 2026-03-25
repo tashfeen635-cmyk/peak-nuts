@@ -448,11 +448,14 @@
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>' +
       '</button>';
 
-    return '<div class="product-card">' +
+    return '<div class="product-card" data-product-id="' + id + '">' +
       '<div class="product-img" style="position:relative;">' +
         '<img src="' + imgSrc + '" alt="' + name + '" loading="lazy">' +
         badgeHtml +
         heartHtml +
+        '<div class="product-actions">' +
+          '<button class="btn btn-primary btn-block btn-card-order" data-product-id="' + id + '">ORDER NOW</button>' +
+        '</div>' +
       '</div>' +
       '<div class="product-info">' +
         '<h3 class="product-name">' + name + '</h3>' +
@@ -947,6 +950,24 @@
 
   // Attach product card click handlers
   function attachProductClickHandlers(container) {
+    // ORDER NOW button on card — opens order popup directly
+    container.querySelectorAll('.btn-card-order').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var card = this.closest('.product-card');
+        var nameEl = card.querySelector('.product-name');
+        var productName = nameEl ? nameEl.textContent.trim() : '';
+        for (var i = 0; i < allProducts.length; i++) {
+          if (allProducts[i].name === productName) {
+            currentOrderProduct = allProducts[i];
+            openOrderPopup();
+            break;
+          }
+        }
+      });
+    });
+
+    // Card click — opens product modal
     container.querySelectorAll('.product-card').forEach(function (card) {
       card.addEventListener('click', function (e) {
         var productName = '';
@@ -1001,7 +1022,7 @@
       body: '<h3>Delivery Times</h3>' +
         '<p>Standard delivery takes 3\u20135 business days within Pakistan. Remote areas may take up to 7 business days.</p>' +
         '<h3>Free Shipping</h3>' +
-        '<p>We offer free shipping on all orders above Rs.40. Orders below this threshold incur a flat Rs.5 delivery fee.</p>' +
+        '<p>We offer free shipping on all orders above Rs.40. Orders below this threshold incur a flat Rs.287 delivery fee.</p>' +
         '<h3>Order Tracking</h3>' +
         '<p>Once your order is dispatched, you will receive an email with tracking details. You can track your parcel via the courier\u2019s website.</p>'
     },
